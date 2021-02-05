@@ -1,41 +1,32 @@
 use chrono::prelude::{ DateTime, Utc };
-use uuid::Uuid;
 use serde::{ Serialize, Deserialize };
-use std::sync::{ Arc };
+use std::sync::Arc;
 use std::time::Duration;
 use std::path::PathBuf;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 use futures::stream::Stream;
 use std::marker::Unpin;
-
-#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
-pub struct GroupId(Uuid);
-
-#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
-pub struct ScorableId(Uuid);
-
-#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
-pub struct ScoreId(Uuid);
+use crate::store_interface::{ GroupId, ScorableId, ScoreId, HashedPassword };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// Add/update a user in the system
-    AddUser { username: String, hashed_password: String },
+    UpsertUser { username: String, hashed_password: HashedPassword },
     /// Delete user from the system
     DeleteUser { username: String },
 
     /// Add/update a group for scores to live under
-    AddGroup { id: GroupId, name: String },
+    UpsertGroup { id: GroupId, name: String },
     /// Delete a group (and everything in it)
     DeleteGroup { id: GroupId },
 
     /// Add thing to score (and all scores against it)
-    AddScorable { id: ScorableId, group_id: GroupId, name: String },
+    UpsertScorable { id: ScorableId, group_id: GroupId, name: String },
     /// Remove a thing to score (and all scores against it)
     DeleteScorable { id: ScorableId },
 
     /// Add a score to a group at a date
-    AddScore { id: ScoreId, scorable_id: ScorableId, value: i64, date: DateTime<Utc> },
+    UpsertScore { id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc> },
     /// Remove a score from a group
     DeleteScore { id: ScoreId }
 }
@@ -58,6 +49,7 @@ impl Events {
         self.in_memory.lock().await.is_empty()
     }
 
+    #[must_use]
     async fn push(&self, ev: Event) {
         self.in_memory.lock().await.push(ev)
     }
@@ -118,9 +110,10 @@ impl EventHandler {
         // Periodically flush events to disk:
         tokio::spawn(async move {
             loop {
-                tokio::time::sleep(Duration::from_secs(30)).await;
-                in_memory_events2.flush_to_disk().await;
-                // TODO: Log errors flushng to disk.
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                if let Err(e) = in_memory_events2.flush_to_disk().await {
+                    log::error!("Error writing events to disk: {}", e);
+                }
             }
         });
 

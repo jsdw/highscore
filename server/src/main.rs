@@ -1,5 +1,9 @@
-mod store;
+mod store_interface;
+mod persisted_store;
+mod memory_store;
 mod sessions;
+mod events;
+mod password;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
@@ -17,6 +21,7 @@ struct Opts {
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
 
     let opts = Opts::from_args();
     println!("{:?}", opts);
