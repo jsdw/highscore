@@ -3,34 +3,35 @@
 use serde::{ Serialize, Deserialize };
 use uuid::Uuid;
 use std::{fmt, hash::Hash};
-use thiserror::Error;
 use chrono::prelude::{ DateTime, Utc };
+use std::fmt::Display;
 
 #[async_trait::async_trait]
 pub trait Store {
-    type Error;
+    /// We can render errors, and know whether to show themn to users or not
+    type Error: Display + HasErrorKind;
 
     /// Add/update a user
-    async fn upsert_user(&mut self, username: String, password: HashedPassword) -> Result<(),Self::Error>;
+    async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),Self::Error>;
     /// Check that a user exists with the password provided
     async fn check_user(&self, username: &str, password: &str) -> Result<bool,Self::Error>;
     /// Delete a user
-    async fn delete_user(&mut self, username: &str) -> Result<(),Self::Error>;
+    async fn delete_user(&self, username: &str) -> Result<(),Self::Error>;
 
     /// Add/update a group
-    async fn upsert_group(&mut self, id: GroupId, name: String) -> Result<(),Self::Error>;
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),Self::Error>;
     /// Delete a group
-    async fn delete_group(&mut self, id: &GroupId) -> Result<(),Self::Error>;
+    async fn delete_group(&self, id: &GroupId) -> Result<(),Self::Error>;
 
     /// Add/update a thing to save scores against
-    async fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error>;
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error>;
     /// Delete a scorable
-    async fn delete_scorable(&mut self, id: &ScorableId) -> Result<(),Self::Error>;
+    async fn delete_scorable(&self, id: &ScorableId) -> Result<(),Self::Error>;
 
     /// Add/update a score against something
-    async fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),Self::Error>;
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),Self::Error>;
     /// Delete a score against something
-    async fn delete_score(&mut self, id: &ScoreId) -> Result<(),Self::Error>;
+    async fn delete_score(&self, id: &ScoreId) -> Result<(),Self::Error>;
 
     /// Return a list of groups that we know about
     async fn groups(&self) -> Result<Vec<Group>,Self::Error>;
@@ -39,6 +40,20 @@ pub trait Store {
     /// Return a list of scores for a scorable thing (highest first, up to some limit)
     async fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<Score>,Self::Error>;
 
+}
+
+pub trait HasErrorKind {
+    fn error_kind(&self) -> ErrorKind;
+}
+
+#[derive(Clone,Copy,PartialEq,Eq)]
+pub enum ErrorKind {
+    /// The error was caused by the user (eg trying to set a score
+    /// for a scorable that doesn't exist)
+    UserError,
+    /// The error was some internal issue and should be noted, but
+    /// doesn't need reporting to the user.
+    InternalError
 }
 
 #[derive(Debug,Serialize,Clone)]

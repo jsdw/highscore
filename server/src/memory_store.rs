@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::MutexGuard};
+use std::sync::Mutex;
 use chrono::prelude::{ DateTime, Utc };
 use crate::events::{ Event, EventHandler };
 use crate::store_interface::{ self, Store, GroupId, ScorableId, ScoreId, HashedPassword };
@@ -16,7 +17,17 @@ pub enum MemoryStoreError {
     ScoreNotFound(ScoreId)
 }
 
+impl store_interface::HasErrorKind for MemoryStoreError {
+    fn error_kind(&self) -> store_interface::ErrorKind {
+        store_interface::ErrorKind::UserError
+    }
+}
+
 pub struct MemoryStore {
+    inner: Mutex<MemoryStoreInner>
+}
+
+struct MemoryStoreInner {
     /// Users (mapping of username to password)
     users: HashMap<String, HashedPassword>,
     /// Groups of scorables that themselves have scores on
@@ -30,7 +41,7 @@ impl MemoryStore {
     /// Load data in from persisted events.
     pub async fn from_events(events: &EventHandler) -> anyhow::Result<MemoryStore> {
         use futures::stream::StreamExt;
-        let mut data = MemoryStore {
+        let mut data = MemoryStoreInner {
             users: HashMap::new(),
             scores: HashMap::new(),
             // Indexes:
@@ -50,7 +61,9 @@ impl MemoryStore {
                     }
                 }
                 Event::UpsertGroup { id, name } => {
-                    data.upsert_group(id, name);
+                    if let Err(e) = data.upsert_group(id, name) {
+                        log::warn!("Ignoring event UpsertGroup: {}", e);
+                    }
                 }
                 Event::DeleteGroup { id } => {
                     if let Err(e) = data.delete_group(&id) {
@@ -79,15 +92,69 @@ impl MemoryStore {
                 }
             }
         }
-        Ok(data)
+        Ok(MemoryStore { inner: Mutex::new(data) })
+    }
+    // A convenience to lock the inner store briefly so that we can call things against it.
+    fn lock(&self) -> MutexGuard<MemoryStoreInner> {
+        self.inner.lock().unwrap()
+    }
+}
+
+// MemoryStore is a valid store on its own, but it's mainly used as
+// the in-memory part of persisted_store.
+#[async_trait::async_trait]
+impl Store for MemoryStore {
+    type Error = MemoryStoreError;
+
+    async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),Self::Error> {
+        self.lock().upsert_user(username, password)
+    }
+    async fn check_user(&self, username: &str, password: &str) -> Result<bool,Self::Error> {
+        self.lock().check_user(username, password)
+    }
+    async fn delete_user(&self, username: &str) -> Result<(),Self::Error> {
+        self.lock().delete_user(username)
     }
 
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),Self::Error> {
+        self.lock().upsert_group(id, name)
+    }
+    async fn delete_group(&self, id: &GroupId) -> Result<(),Self::Error> {
+        self.lock().delete_group(id)
+    }
+
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error> {
+        self.lock().upsert_scorable(id, group_id, name)
+    }
+    async fn delete_scorable(&self, id: &ScorableId) -> Result<(),Self::Error> {
+        self.lock().delete_scorable(id)
+    }
+
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),Self::Error> {
+        self.lock().upsert_score(id, scorable_id, username, value, date)
+    }
+    async fn delete_score(&self, id: &ScoreId) -> Result<(),Self::Error> {
+        self.lock().delete_score(id)
+    }
+
+    async fn groups(&self) -> Result<Vec<crate::store_interface::Group>,Self::Error> {
+        self.lock().groups()
+    }
+    async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<store_interface::Scorable>,Self::Error> {
+        self.lock().scorables_in_group(group_id)
+    }
+    async fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<store_interface::Score>,Self::Error> {
+        self.lock().get_scores(scorable_id, limit)
+    }
+}
+
+impl MemoryStoreInner {
     // Working with Users
     pub fn upsert_user(&mut self, username: String, hashed_password: HashedPassword) -> Result<(),MemoryStoreError> {
         self.users.insert(username, hashed_password);
         Ok(())
     }
-    pub fn check_user(&self, username: &str, password: &str) -> Result<bool,MemoryStoreError> {
+    pub fn check_user(&mut self, username: &str, password: &str) -> Result<bool,MemoryStoreError> {
         let is_valid = self.users
             .get(username)
             .map(|hash| hash.verify_plain_password(password))
@@ -210,7 +277,6 @@ impl MemoryStore {
             .collect();
         Ok(scores)
     }
-
 }
 
 struct Group {
@@ -242,52 +308,4 @@ struct Score {
     username: String,
     value: i64,
     date: DateTime<Utc>
-}
-
-// MemoryStore is a valid store on its own, but it's mainly used as
-// the in-memory part of persisted_store.
-#[async_trait::async_trait]
-impl Store for MemoryStore {
-    type Error = MemoryStoreError;
-
-    async fn upsert_user(&mut self, username: String, password: HashedPassword) -> Result<(),Self::Error> {
-        self.upsert_user(username, password)
-    }
-    async fn check_user(&self, username: &str, password: &str) -> Result<bool,Self::Error> {
-        self.check_user(username, password)
-    }
-    async fn delete_user(&mut self, username: &str) -> Result<(),Self::Error> {
-        self.delete_user(username)
-    }
-
-    async fn upsert_group(&mut self, id: GroupId, name: String) -> Result<(),Self::Error> {
-        self.upsert_group(id, name)
-    }
-    async fn delete_group(&mut self, id: &GroupId) -> Result<(),Self::Error> {
-        self.delete_group(id)
-    }
-
-    async fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error> {
-        self.upsert_scorable(id, group_id, name)
-    }
-    async fn delete_scorable(&mut self, id: &ScorableId) -> Result<(),Self::Error> {
-        self.delete_scorable(id)
-    }
-
-    async fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),Self::Error> {
-        self.upsert_score(id, scorable_id, username, value, date)
-    }
-    async fn delete_score(&mut self, id: &ScoreId) -> Result<(),Self::Error> {
-        self.delete_score(id)
-    }
-
-    async fn groups(&self) -> Result<Vec<crate::store_interface::Group>,Self::Error> {
-        self.groups()
-    }
-    async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<store_interface::Scorable>,Self::Error> {
-        self.scorables_in_group(group_id)
-    }
-    async fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<store_interface::Score>,Self::Error> {
-        self.get_scores(scorable_id, limit)
-    }
 }
