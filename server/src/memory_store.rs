@@ -163,8 +163,14 @@ impl MemoryStoreInner {
     }
     pub fn delete_user(&mut self, username: &str) -> Result<(),MemoryStoreError> {
         self.users.remove(username)
-            .ok_or_else(|| MemoryStoreError::UserNotFound(username.to_owned()))
-            .map(|_| ())
+            .ok_or_else(|| MemoryStoreError::UserNotFound(username.to_owned()))?;
+        // Remove all scores associated with this user, too:
+        for group in self.scores.values_mut() {
+            for scores in group.scorables.values_mut() {
+                scores.scores.retain(|_,s| s.username != username);
+            }
+        }
+        Ok(())
     }
 
     // Editing Groups
@@ -207,6 +213,9 @@ impl MemoryStoreInner {
 
     // Editing Scores
     pub fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),MemoryStoreError> {
+        if !self.users.contains_key(&username) {
+            return Err(MemoryStoreError::UserNotFound(username));
+        }
         let group_id = self.scorable_to_group.get(&scorable_id)
             .ok_or(MemoryStoreError::ScorableNotFound(scorable_id))?;
         let group = self.scores.get_mut(group_id)

@@ -29,71 +29,83 @@ impl PersistedStore {
 
 // This store uses a memory store for most reads and writes, but also writes to
 // an event log to achieve persistence where necessary.
+//
+// Writes to the event log only happen once the call to the memory_store has
+// succeeded, to avoid writing naff data to the event log and lean on memory_store
+// to check that inputs are sensible.
 #[async_trait::async_trait]
 impl Store for PersistedStore {
     type Error = PersistedStoreError;
 
     async fn upsert_user(&self, username: String, hashed_password: HashedPassword) -> Result<(),Self::Error> {
+        let res = self.memory_store.upsert_user(username.clone(), hashed_password.clone()).await?;
         self.events.push(Event::UpsertUser {
-            username: username.clone(),
-            hashed_password: hashed_password.clone()
+            username: username,
+            hashed_password: hashed_password
         }).await;
-        self.memory_store.upsert_user(username, hashed_password).await
+        Ok(res)
     }
     async fn check_user(&self, username: &str, password: &str) -> Result<bool,Self::Error> {
         self.memory_store.check_user(username, password).await
     }
     async fn delete_user(&self, username: &str) -> Result<(),Self::Error> {
+        let res = self.memory_store.delete_user(username).await?;
         self.events.push(Event::DeleteUser {
             username: username.to_owned()
         }).await;
-        self.memory_store.delete_user(username).await
+        Ok(res)
     }
 
     async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),Self::Error> {
+        let res = self.memory_store.upsert_group(id, name.clone()).await?;
         self.events.push(Event::UpsertGroup {
             id,
-            name: name.clone()
+            name
         }).await;
-        self.memory_store.upsert_group(id, name).await
+        Ok(res)
     }
     async fn delete_group(&self, id: &GroupId) -> Result<(),Self::Error> {
+        let res = self.memory_store.delete_group(id).await?;
         self.events.push(Event::DeleteGroup {
             id: *id,
         }).await;
-        self.memory_store.delete_group(id).await
+        Ok(res)
     }
 
     async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error> {
+        let res = self.memory_store.upsert_scorable(id, group_id, name.clone()).await?;
         self.events.push(Event::UpsertScorable {
             id,
             group_id,
-            name: name.clone()
+            name: name
         }).await;
-        self.memory_store.upsert_scorable(id, group_id, name).await
+        Ok(res)
     }
     async fn delete_scorable(&self, id: &ScorableId) -> Result<(),Self::Error> {
+        let res = self.memory_store.delete_scorable(id).await?;
         self.events.push(Event::DeleteScorable {
             id: *id
         }).await;
-        self.memory_store.delete_scorable(id).await
+        Ok(res)
     }
 
     async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: chrono::DateTime<chrono::Utc>) -> Result<(),Self::Error> {
+        let res = self.memory_store.upsert_score(id, scorable_id, username.clone(), value, date).await?;
         self.events.push(Event::UpsertScore {
             date,
             id,
             value,
-            username: username.clone(),
+            username,
             scorable_id
         }).await;
-        self.memory_store.upsert_score(id, scorable_id, username, value, date).await
+        Ok(res)
     }
     async fn delete_score(&self, id: &ScoreId) -> Result<(),Self::Error> {
+        let res = self.memory_store.delete_score(id).await?;
         self.events.push(Event::DeleteScore {
             id: *id
         }).await;
-        self.memory_store.delete_score(id).await
+        Ok(res)
     }
 
     async fn groups(&self) -> Result<Vec<Group>,Self::Error> {

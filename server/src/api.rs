@@ -206,7 +206,7 @@ struct ScoresInput {
     limit: Option<usize>
 }
 
-#[get("/scores", data = "<body>")]
+#[post("/scores", data = "<body>")]
 async fn scores(_user: User, store: State<'_, PersistedStore>, body: Json<ScoresInput>) -> HttpResult<Json<Vec<Score>>> {
     let scores = store.scores(&body.scorable_id, body.limit.clone()).await?;
     Ok(Json(scores))
