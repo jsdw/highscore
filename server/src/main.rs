@@ -18,7 +18,9 @@ use store_interface::{HashedPassword, Store};
 
 #[derive(Debug,Clone,StructOpt)]
 enum Opts {
+    /// Add a user to a highscore database
     AddUser(AddUserOpts),
+    /// Run the highscore server
     Serve(ServeOpts)
 }
 

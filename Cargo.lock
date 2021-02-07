@@ -575,6 +575,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "highscore"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "dashmap",
+ "env_logger",
+ "futures",
+ "log",
+ "rand 0.8.3",
+ "rocket",
+ "rocket_contrib",
+ "rpassword",
+ "rust-argon2",
+ "serde",
+ "serde_json",
+ "structopt",
+ "thiserror",
+ "time 0.2.25",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "hkdf"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1284,31 +1309,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "chrono",
- "dashmap",
- "env_logger",
- "futures",
- "log",
- "rand 0.8.3",
- "rocket",
- "rocket_contrib",
- "rpassword",
- "rust-argon2",
- "serde",
- "serde_json",
- "structopt",
- "thiserror",
- "time 0.2.25",
- "tokio",
- "uuid",
 ]
 
 [[package]]

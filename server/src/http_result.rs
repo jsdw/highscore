@@ -21,6 +21,9 @@ impl HttpError {
     pub fn new<S: Into<String>>(code: u16, message: S) -> HttpError {
         HttpError { code, message: message.into() }
     }
+    pub fn server_error<S: Into<String>>(message: S) -> HttpError {
+        HttpError { code: 500, message: message.into() }
+    }
 }
 
 // Anything that is a valid `store_interface` Error can also

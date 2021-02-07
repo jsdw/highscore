@@ -14,6 +14,7 @@ pub fn routes() -> Vec<rocket::Route> {
     routes![
         login,
         logout,
+        current_user,
         upsert_user,
         delete_user,
         upsert_group,
@@ -27,6 +28,7 @@ pub fn routes() -> Vec<rocket::Route> {
         scores,
     ]
 }
+
 
 #[derive(Deserialize)]
 struct LoginInput {
@@ -49,10 +51,21 @@ async fn login(store: State<'_, PersistedStore>, cookies: &CookieJar<'_>, body: 
 }
 
 
-#[post("/logout")]
+#[get("/logout")]
 async fn logout(cookies: &CookieJar<'_>) -> HttpResult<Json<Empty>> {
     user::remove_user_cookie(cookies);
     Ok(Json(Empty {}))
+}
+
+
+#[derive(Serialize)]
+struct CurrentUserOutput {
+    username: Option<String>
+}
+
+#[get("/current_user")]
+async fn current_user(user: Option<User>) -> HttpResult<Json<CurrentUserOutput>> {
+    Ok(Json(CurrentUserOutput { username: user.map(|u| u.name) }))
 }
 
 
@@ -65,7 +78,10 @@ struct UpsertUserInput {
 #[post("/upsert_user", data = "<body>")]
 async fn upsert_user(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertUserInput>) -> HttpResult<Json<Empty>> {
     let new_user = body.into_inner();
-    let hashed_password = HashedPassword::from_plain_password(&new_user.password);
+    let plain_password = new_user.password;
+    let hashed_password = tokio::task::spawn_blocking(move || HashedPassword::from_plain_password(&plain_password))
+        .await
+        .map_err(|_| HttpError::server_error("Failed to join thread after hashing password"))?;
     store.upsert_user(new_user.username, hashed_password).await?;
     Ok(Json(Empty {}))
 }

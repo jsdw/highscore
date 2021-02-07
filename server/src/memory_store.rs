@@ -158,6 +158,7 @@ impl MemoryStoreInner {
         Ok(())
     }
     pub fn check_user(&mut self, username: &str, password: &str) -> Result<bool,MemoryStoreError> {
+        // TODO: Modify this to do the hash checking in a blocking pool
         let is_valid = self.users
             .get(username)
             .map(|hash| hash.verify_plain_password(password))

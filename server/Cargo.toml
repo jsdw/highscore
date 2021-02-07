@@ -1,5 +1,5 @@
 [package]
-name = "server"
+name = "highscore"
 version = "0.1.0"
 authors = ["James Wilson <james@jsdw.me>"]
 edition = "2018"
