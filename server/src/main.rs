@@ -66,7 +66,7 @@ async fn add_user(opts: AddUserOpts) -> anyhow::Result<()> {
     store.upsert_user(username.to_owned(), hashed_password).await?;
     store.flush_to_disk().await?;
 
-    println!("User {} added", username);
+    println!("User {} added.", username);
     Ok(())
 }
 

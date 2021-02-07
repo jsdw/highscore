@@ -76,6 +76,11 @@ pub struct Score {
 #[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
 pub struct GroupId(Uuid);
 
+impl GroupId {
+    pub fn new() -> GroupId {
+        GroupId(Uuid::new_v4())
+    }
+}
 impl fmt::Display for GroupId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -85,6 +90,11 @@ impl fmt::Display for GroupId {
 #[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
 pub struct ScorableId(Uuid);
 
+impl ScorableId {
+    pub fn new() -> ScorableId {
+        ScorableId(Uuid::new_v4())
+    }
+}
 impl fmt::Display for ScorableId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -94,6 +104,11 @@ impl fmt::Display for ScorableId {
 #[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
 pub struct ScoreId(Uuid);
 
+impl ScoreId {
+    pub fn new() -> ScoreId {
+        ScoreId(Uuid::new_v4())
+    }
+}
 impl fmt::Display for ScoreId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)

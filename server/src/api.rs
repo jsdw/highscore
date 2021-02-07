@@ -83,15 +83,21 @@ async fn delete_user(_user: User, store: State<'_, PersistedStore>, body: Json<D
 
 #[derive(Deserialize)]
 struct UpsertGroupInput {
-    id: GroupId,
+    id: Option<GroupId>,
     name: String
 }
 
+#[derive(Serialize)]
+struct UpsertGroupOutput {
+    id: GroupId
+}
+
 #[post("/upsert_group", data = "<body>")]
-async fn upsert_group(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertGroupInput>) -> HttpResult<Json<Empty>> {
+async fn upsert_group(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertGroupInput>) -> HttpResult<Json<UpsertGroupOutput>> {
     let group = body.into_inner();
-    store.upsert_group(group.id, group.name).await?;
-    Ok(Json(Empty {}))
+    let id = group.id.unwrap_or_else(GroupId::new);
+    store.upsert_group(id, group.name).await?;
+    Ok(Json(UpsertGroupOutput { id }))
 }
 
 
@@ -109,16 +115,22 @@ async fn delete_group(_user: User, store: State<'_, PersistedStore>, body: Json<
 
 #[derive(Deserialize)]
 struct UpsertScorableInput {
-    id: ScorableId,
+    id: Option<ScorableId>,
     group_id: GroupId,
     name: String
 }
 
+#[derive(Serialize)]
+struct UpsertScorableOutput {
+    id: ScorableId
+}
+
 #[post("/upsert_scorable", data = "<body>")]
-async fn upsert_scorable(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertScorableInput>) -> HttpResult<Json<Empty>> {
+async fn upsert_scorable(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertScorableInput>) -> HttpResult<Json<UpsertScorableOutput>> {
     let scorable = body.into_inner();
-    store.upsert_scorable(scorable.id, scorable.group_id, scorable.name).await?;
-    Ok(Json(Empty {}))
+    let id = scorable.id.unwrap_or_else(ScorableId::new);
+    store.upsert_scorable(id, scorable.group_id, scorable.name).await?;
+    Ok(Json(UpsertScorableOutput { id }))
 }
 
 
@@ -136,18 +148,24 @@ async fn delete_scorable(_user: User, store: State<'_, PersistedStore>, body: Js
 
 #[derive(Deserialize)]
 struct UpsertScoreInput {
-    id: ScoreId,
+    id: Option<ScoreId>,
     scorable_id: ScorableId,
     username: String,
     value: i64,
     date: DateTime<Utc>
 }
 
+#[derive(Serialize)]
+struct UpsertScoreOutput {
+    id: ScoreId
+}
+
 #[post("/upsert_score", data = "<body>")]
-async fn upsert_score(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertScoreInput>) -> HttpResult<Json<Empty>> {
+async fn upsert_score(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertScoreInput>) -> HttpResult<Json<UpsertScoreOutput>> {
     let score = body.into_inner();
-    store.upsert_score(score.id, score.scorable_id, score.username, score.value, score.date).await?;
-    Ok(Json(Empty {}))
+    let id = score.id.unwrap_or_else(ScoreId::new);
+    store.upsert_score(id, score.scorable_id, score.username, score.value, score.date).await?;
+    Ok(Json(UpsertScoreOutput { id }))
 }
 
 
