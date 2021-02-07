@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use rocket::request::{self, Request, FromRequest};
 use rocket::http::{CookieJar, Cookie, Status};
 
@@ -29,10 +31,19 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 
 /// Set a cookie for a user so that they are logged in
 pub fn add_user_cookie(cookies: &CookieJar, username: String) {
-    cookies.add_private(Cookie::new(COOKIE_NAME, username));
+    cookies.add_private(build_cookie(username));
 }
 
 /// Log a user out by removing their cookie
 pub fn remove_user_cookie(cookies: &CookieJar) {
-    cookies.remove_private(Cookie::new(COOKIE_NAME, String::new()));
+    cookies.remove_private(build_cookie(String::new()));
+}
+
+fn build_cookie(username: String) -> Cookie<'static> {
+    let expires = time::OffsetDateTime::now_utc() + time::Duration::days(60);
+    Cookie::build(COOKIE_NAME, username)
+        .expires(expires)
+        .path("/")
+        .http_only(true)
+        .finish()
 }

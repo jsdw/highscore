@@ -9,6 +9,7 @@ use std::marker::Unpin;
 use crate::store_interface::{ GroupId, ScorableId, ScoreId, HashedPassword };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "ty")]
 pub enum Event {
     /// Add/update a user in the system
     UpsertUser { username: String, hashed_password: HashedPassword },
@@ -60,7 +61,8 @@ impl Events {
         let file = match tokio::fs::File::open(&self.file_path).await {
             Ok(file) => file,
             Err(e) => {
-                log::warn!("Cannot read from database: a new one will be created as needed");
+                // Not an error if no file exists yet, but something you may want to know:
+                log::debug!("Cannot read from database: {}", e);
                 return Ok::<BoxedStream,_>(Box::pin(futures::stream::empty()))
             }
         };
@@ -73,7 +75,8 @@ impl Events {
         Ok(Box::pin(futures::stream::try_unfold((buf,String::new()), |(mut buf, mut line)| async move {
             let event = loop {
                 line.clear();
-                buf.read_line(&mut line).await?;
+                let n = buf.read_line(&mut line).await?;
+                if n == 0 { return Ok(None) }
                 let event = serde_json::from_str(&line);
                 if let Ok(ev) = event { break ev }
             };
@@ -138,6 +141,11 @@ impl EventHandler {
     /// Read events from disk
     pub async fn read_from_disk(&self) -> anyhow::Result<impl Stream<Item = Result<Event,anyhow::Error>> + Unpin> {
         self.in_memory_events.read_from_disk().await
+    }
+
+    /// Force anything in-memory to be flushed to disk immediately.
+    pub async fn flush_to_disk(&self) -> anyhow::Result<()> {
+        self.in_memory_events.flush_to_disk().await
     }
 
 }

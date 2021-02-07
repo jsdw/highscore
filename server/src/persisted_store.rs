@@ -20,6 +20,11 @@ impl PersistedStore {
         let memory_store = MemoryStore::from_events(&events).await?;
         Ok(PersistedStore { events, memory_store })
     }
+
+    /// Force anything in-memory to be flushed to disk immediately.
+    pub async fn flush_to_disk(&self) -> anyhow::Result<()> {
+        self.events.flush_to_disk().await
+    }
 }
 
 // This store uses a memory store for most reads and writes, but also writes to

@@ -1198,6 +1198,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpassword"
+version = "5.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffc936cf8a7ea60c58f030fd36a612a48f440610214dc54bc36431f9ea0c3efb"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1290,11 +1300,13 @@ dependencies = [
  "rand 0.8.3",
  "rocket",
  "rocket_contrib",
+ "rpassword",
  "rust-argon2",
  "serde",
  "serde_json",
  "structopt",
  "thiserror",
+ "time 0.2.25",
  "tokio",
  "uuid",
 ]
