@@ -3,7 +3,8 @@ use crate::events::{ EventHandler, Event };
 use crate::memory_store::{ MemoryStore, MemoryStoreError };
 use crate::store_interface::{ Store, GroupId, ScoreId, ScorableId, Group, Score, HashedPassword };
 
-/// An in-memory data store.
+/// This combines an in-memory `Store` implementation with eventual
+/// persistence in the form of append-only event logs.
 pub struct PersistedStore {
     /// Read and write events to persist
     events: EventHandler,
@@ -27,8 +28,8 @@ impl PersistedStore {
     }
 }
 
-// This store uses a memory store for most reads and writes, but also writes to
-// an event log to achieve persistence where necessary.
+// This implementation uses a memory store for most reads and writes, but also writes to
+// an event log ocasionally to achieve eventual persistence.
 //
 // Writes to the event log only happen once the call to the memory_store has
 // succeeded, to avoid writing naff data to the event log and lean on memory_store

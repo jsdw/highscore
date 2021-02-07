@@ -77,11 +77,16 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
     let mut rocket_config = rocket::config::Config::default();
     rocket_config.port = opts.port;
 
-    rocket::custom(rocket_config)
+    let mut rocket = rocket::custom(rocket_config)
         .manage(store)
-        .mount("/api", api::routes())
-        .launch()
-        .await?;
+        .mount("/api", api::routes());
+
+    // Serve static files if asked to:
+    if let Some(path) = opts.static_files {
+        rocket = rocket.mount("/", rocket_contrib::serve::StaticFiles::from(path));
+    }
+
+    rocket.launch().await?;
 
     Ok(())
 }

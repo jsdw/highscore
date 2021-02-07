@@ -1,3 +1,7 @@
+//! Our in-memory store can be shared across threads, and provides a simple
+//! implementation of [`crate::store_interface::Store`]. We prefer to use the
+//! persisted_store though, which builds persistence on top of this.
+
 use std::{collections::HashMap, sync::MutexGuard};
 use std::sync::Mutex;
 use chrono::prelude::{ DateTime, Utc };
@@ -22,7 +26,6 @@ impl store_interface::HasErrorKind for MemoryStoreError {
         store_interface::ErrorKind::UserError
     }
 }
-
 pub struct MemoryStore {
     inner: Mutex<MemoryStoreInner>
 }

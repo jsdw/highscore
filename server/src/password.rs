@@ -1,3 +1,5 @@
+//! A couple of helper functions to deal with passwords.
+
 /// Hash a password string.
 pub fn hash(password: &str) -> String {
     let config = argon2::Config::default();

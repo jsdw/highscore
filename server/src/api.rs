@@ -1,3 +1,5 @@
+//! Rocket API routes to provide access to the backend.
+
 use crate::store_interface::{ HashedPassword, Store, GroupId, ScorableId, ScoreId, Group, Scorable, Score };
 use crate::persisted_store::{ PersistedStore };
 use crate::user::{ self, User };

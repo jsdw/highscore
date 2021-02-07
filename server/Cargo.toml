@@ -34,4 +34,4 @@ features = ["secrets"]
 git = "https://github.com/SergioBenitez/Rocket"
 rev = "c24f15c1"
 default_features = false
-features = ["json"]
+features = ["json", "serve"]

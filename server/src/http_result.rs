@@ -1,3 +1,6 @@
+//! A convenient response type to use in our API handlers. Any errors that come
+//! from things implementing the `Store` interface can be cast to these.
+
 use std::fmt::Display;
 use std::io::Cursor;
 use crate::store_interface::{ ErrorKind, HasErrorKind };
@@ -20,6 +23,8 @@ impl HttpError {
     }
 }
 
+// Anything that is a valid `store_interface` Error can also
+// be converted into an HttpError:
 impl <E: HasErrorKind + Display> From<E> for HttpError {
     fn from(e: E) -> Self {
         let status_code = match e.error_kind() {
@@ -32,6 +37,7 @@ impl <E: HasErrorKind + Display> From<E> for HttpError {
     }
 }
 
+// With this, Rocket understands how to respond to the user given an HttpError:
 #[rocket::async_trait]
 impl<'r> Responder<'r, 'static> for HttpError {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {

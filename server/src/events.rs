@@ -1,3 +1,7 @@
+//! Events allow us to recreate the in-memory representation of our
+//! data, while also allowing us to store the data in an append-only
+//! way for write efficiency.
+
 use chrono::prelude::{ DateTime, Utc };
 use serde::{ Serialize, Deserialize };
 use std::sync::Arc;
@@ -7,7 +11,6 @@ use tokio::{io::AsyncWriteExt, sync::Mutex};
 use futures::stream::Stream;
 use std::marker::Unpin;
 use crate::store_interface::{ GroupId, ScorableId, ScoreId, HashedPassword };
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "ty")]
 pub enum Event {
@@ -95,6 +98,8 @@ impl Events {
             .open(&self.file_path).await?;
         for event in &*events {
             let event_json = serde_json::to_vec(&event)?;
+            // Newline first prevents accidental assumptions that
+            // lead to 2 events ending up on the same line:
             file.write_all(b"\n").await?;
             file.write(&event_json).await?;
         }
@@ -111,14 +116,15 @@ pub struct EventHandler {
 
 impl EventHandler {
 
-    /// Create a new event handler by providing a path o ndisk to where
+    /// Create a new event handler by providing a path on disk to where
     /// events will be persisted. This must run in a `tokio` context.
     pub fn new(file_path: std::path::PathBuf) -> EventHandler {
 
         let in_memory_events = Arc::new(Events::new(file_path));
         let in_memory_events2 = Arc::clone(&in_memory_events);
 
-        // Periodically flush events to disk:
+        // Periodically flush events to disk. This will bail early if
+        // there's nothing to flush.
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(1)).await;
