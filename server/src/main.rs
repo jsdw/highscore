@@ -79,7 +79,7 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
 
     rocket::custom(rocket_config)
         .manage(store)
-        .mount("/", api::routes())
+        .mount("/api", api::routes())
         .launch()
         .await?;
 

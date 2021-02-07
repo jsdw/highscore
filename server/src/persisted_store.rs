@@ -102,7 +102,7 @@ impl Store for PersistedStore {
     async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<crate::store_interface::Scorable>,Self::Error> {
         self.memory_store.scorables_in_group(group_id).await
     }
-    async fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<Score>,Self::Error> {
-        self.memory_store.get_scores(scorable_id, limit).await
+    async fn scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<Score>,Self::Error> {
+        self.memory_store.scores(scorable_id, limit).await
     }
 }

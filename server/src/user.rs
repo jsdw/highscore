@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use rocket::request::{self, Request, FromRequest};
 use rocket::http::{CookieJar, Cookie, Status};
 

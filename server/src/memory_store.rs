@@ -143,7 +143,7 @@ impl Store for MemoryStore {
     async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<store_interface::Scorable>,Self::Error> {
         self.lock().scorables_in_group(group_id)
     }
-    async fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<store_interface::Score>,Self::Error> {
+    async fn scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<store_interface::Score>,Self::Error> {
         self.lock().get_scores(scorable_id, limit)
     }
 }

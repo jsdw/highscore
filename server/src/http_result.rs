@@ -23,8 +23,7 @@ impl HttpError {
 impl <E: HasErrorKind + Display> From<E> for HttpError {
     fn from(e: E) -> Self {
         let status_code = match e.error_kind() {
-            ErrorKind::UserError => 400,
-            ErrorKind::InternalError => 500
+            ErrorKind::UserError => 400
         };
         HttpError {
             code: status_code,
