@@ -45,10 +45,6 @@ impl Events {
         }
     }
 
-    async fn is_empty(&self) -> bool {
-        self.in_memory.lock().await.is_empty()
-    }
-
     #[must_use]
     async fn push(&self, ev: Event) {
         self.in_memory.lock().await.push(ev)
@@ -56,7 +52,19 @@ impl Events {
 
     async fn read_from_disk(&self) -> anyhow::Result<impl Stream<Item = Result<Event,anyhow::Error>> + Unpin + Send + Sync + 'static> {
         use tokio::io::AsyncBufReadExt;
-        let file = tokio::fs::File::open(&self.file_path).await?;
+
+        // We box our resulting stream into this, so that we can return an empty
+        // stream if needbe, or return a stream from the file otherwise.
+        type BoxedStream = std::pin::Pin<Box<dyn Stream<Item = Result<Event,anyhow::Error>> + Send + Sync + 'static>>;
+
+        let file = match tokio::fs::File::open(&self.file_path).await {
+            Ok(file) => file,
+            Err(e) => {
+                log::warn!("Cannot read from database: a new one will be created as needed");
+                return Ok::<BoxedStream,_>(Box::pin(futures::stream::empty()))
+            }
+        };
+
         let buf = tokio::io::BufReader::new(file);
 
         // return a stream of events, ignoring any lines in the file which
