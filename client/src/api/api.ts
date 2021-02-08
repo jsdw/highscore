@@ -23,7 +23,8 @@ export function current_user(): Promise<CurrentUserOutput> {
 }
 
 export type UpsertUserInput = {
-    username: string
+    /** Will modify the current user if name not given */
+    username?: string
     password: string
 }
 export function upsert_user(opts: UpsertUserInput): Promise<{}> {
@@ -93,7 +94,7 @@ export function delete_scorable(opts: DeleteScorableInput): Promise<{}> {
 export type UpsertScoreInput = {
     id?: string
     scorable_id: string
-    username: string
+    username?: string
     value: number
     /** ISO date string */
     date?: string

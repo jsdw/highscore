@@ -35,6 +35,9 @@ struct AddUserOpts {
 
 #[derive(Debug,Clone,StructOpt)]
 struct ServeOpts {
+    /// Address to serve on
+    #[structopt(long,short,default_value="127.0.0.1")]
+    address: std::net::IpAddr,
     /// Which port will the app run on
     #[structopt(long,short,default_value="8080")]
     port: u16,
@@ -80,6 +83,7 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
 
     let mut rocket_config = rocket::config::Config::default();
     rocket_config.port = opts.port;
+    rocket_config.address = opts.address;
 
     let mut rocket = rocket::custom(rocket_config)
         .manage(state::State {

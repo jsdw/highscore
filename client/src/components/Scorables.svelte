@@ -10,6 +10,7 @@
     let scorables: apiTypes.ScorablesInGroupOutput = []
     let group_name: string = ""
     let show_add_modal = false
+    let loading = true
 
     get_details()
 
@@ -18,11 +19,13 @@
         const group = await api.get_group({ id: group_id })
         scorables = res
         group_name = group.name
+        loading = false
     }
 
-    function add_scorable(name: string) {
+    async function add_scorable(name: string) {
         hide_modal()
-        api.upsert_group({ name }).finally(get_details)
+        await api.upsert_scorable({ name, group_id })
+        get_details()
     }
 
     function show_modal() {
@@ -38,20 +41,23 @@
 
 </script>
 
-<h1>{group_name}</h1>
-<div class="container">
-    <div class="inner">
-        {#each scorables as scorable (scorable.id) }
-            <div class="scorable" on:click={() => show_scorable(scorable.id)}>
-                <span>{scorable.name}</span>
-                <Button>Show</Button>
+{#if !loading}
+    <h1>{group_name}</h1>
+    <div class="container">
+        <div class="inner">
+            {#each scorables as scorable (scorable.id) }
+                <div class="scorable" on:click={() => show_scorable(scorable.id)}>
+                    <span>{scorable.name}</span>
+                    <Button>Show</Button>
+                </div>
+            {/each}
+            <div class="create">
+                <Button on_click={show_modal}>Add scores</Button>
             </div>
-        {/each}
-        <div class="create">
-            <Button on_click={show_modal}>Add scores</Button>
         </div>
     </div>
-</div>
+{/if}
+
 {#if show_add_modal}
     <AddNamed
         title='Add Scorable'

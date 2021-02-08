@@ -73,18 +73,19 @@ async fn current_user(user: Option<User>) -> HttpResult<Json<CurrentUserOutput>>
 
 #[derive(Deserialize)]
 struct UpsertUserInput {
-    username: String,
+    username: Option<String>,
     password: String
 }
 
 #[post("/upsert_user", data = "<body>")]
-async fn upsert_user(_user: User, state: State<'_, state::State>, body: Json<UpsertUserInput>) -> HttpResult<Json<Empty>> {
+async fn upsert_user(user: User, state: State<'_, state::State>, body: Json<UpsertUserInput>) -> HttpResult<Json<Empty>> {
     let new_user = body.into_inner();
+    let username = new_user.username.unwrap_or_else(|| user.name.to_owned());
     let plain_password = new_user.password;
     let hashed_password = tokio::task::spawn_blocking(move || HashedPassword::from_plain_password(&plain_password))
         .await
         .map_err(|_| HttpError::server_error("Failed to join thread after hashing password"))?;
-    state.store.upsert_user(new_user.username, hashed_password).await?;
+    state.store.upsert_user(username, hashed_password).await?;
     Ok(Json(Empty {}))
 }
 
@@ -196,7 +197,7 @@ async fn get_scorable(_user: User, state: State<'_, state::State>, body: Json<Ge
 struct UpsertScoreInput {
     id: Option<ScoreId>,
     scorable_id: ScorableId,
-    username: String,
+    username: Option<String>,
     value: i64,
     date: Option<DateTime<Utc>>
 }
@@ -207,10 +208,11 @@ struct UpsertScoreOutput {
 }
 
 #[post("/upsert_score", data = "<body>")]
-async fn upsert_score(_user: User, state: State<'_, state::State>, body: Json<UpsertScoreInput>) -> HttpResult<Json<UpsertScoreOutput>> {
+async fn upsert_score(user: User, state: State<'_, state::State>, body: Json<UpsertScoreInput>) -> HttpResult<Json<UpsertScoreOutput>> {
     let score = body.into_inner();
+    let username = score.username.unwrap_or_else(|| user.name.to_owned());
     let id = score.id.unwrap_or_else(ScoreId::new);
-    state.store.upsert_score(id, score.scorable_id, score.username, score.value, score.date).await?;
+    state.store.upsert_score(id, score.scorable_id, username, score.value, score.date).await?;
     Ok(Json(UpsertScoreOutput { id }))
 }
 

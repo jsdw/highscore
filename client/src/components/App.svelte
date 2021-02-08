@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '../api'
+	import AddNamed from './AddNamed.svelte'
 	import Groups from './Groups.svelte'
 	import Scorables from './Scorables.svelte'
 	import Scores from './Scores.svelte'
@@ -8,6 +9,7 @@
 
 	let loading = true
 	let current_user: string | null = null
+	let show_settings_modal = false
 
 	type Page = {
 		kind: "groups"
@@ -61,17 +63,23 @@
 		})
 	}
 
+	function settings() {
+		show_settings_modal = true
+	}
+
+	function go_home() {
+		change_page({ kind: "groups" })
+	}
 	function on_select_group(id: string) {
-		change_page({
-			kind: "group",
-			id
-		})
+		change_page({ kind: "group", id })
 	}
 	function on_select_scorable(id: string) {
-		change_page({
-			kind: "scores",
-			id
-		})
+		change_page({ kind: "scores", id })
+	}
+
+	function change_password(password: string) {
+		show_settings_modal = false
+		api.upsert_user({ password })
 	}
 
 </script>
@@ -80,14 +88,17 @@
 	{#if current_user}
 		<main>
 			<header>
-				<h1>Highscore</h1>
+				<h1 on:click={go_home}>Highscore</h1>
 				<div class="greetings">
 					<span>
 						{#if current_user}
 							Hello, {current_user}!
 						{/if}
 					</span>
-					<Link on_click={logout}>logout</Link>
+					<span>
+						<Link on_click={settings}>settings</Link>&nbsp;
+						<Link on_click={logout}>logout</Link>
+					</span>
 				</div>
 			</header>
 			{#if page.kind === "groups"}
@@ -95,12 +106,22 @@
 			{:else if page.kind === "group"}
 				<Scorables {on_select_scorable} group_id={page.id}/>
 			{:else if page.kind === "scores"}
-				<Scores scorable_id={page.id}/>
+				<Scores current_user={current_user} scorable_id={page.id}/>
 			{/if}
 		</main>
 	{:else}
 		<Login on_login={user => current_user = user}/>
 	{/if}
+{/if}
+
+{#if show_settings_modal}
+	<AddNamed
+		title="Edit User"
+		label="Set Password"
+		type="password"
+		on_cancel={() => { show_settings_modal = false }}
+		on_try_add={change_password}
+	/>
 {/if}
 
 <style>
@@ -113,6 +134,8 @@
 		margin-bottom: 0px;
 		margin-bottom: 10px;
 		font-size: 40px;
+		cursor: pointer;
+		user-select: none;
 	}
 	.greetings {
 		display: flex;

@@ -6,6 +6,7 @@
     export let label: string
     export let on_cancel: () => void
     export let on_try_add: (name: string) => void
+    export let type: "text" | "password" | "number" = "text"
 
     let name = ""
 
@@ -20,7 +21,13 @@
 <Modal title={title} on_close={on_cancel}>
     <div class="row">
         <label for="name">{label}</label>
-        <input name="name" bind:value={name} on:keypress={input_keypress}/>
+        {#if type === "password"}
+            <input type="password" name="name" bind:value={name} on:keypress={input_keypress}/>
+        {:else if type === "text"}
+            <input name="name" bind:value={name} on:keypress={input_keypress}/>
+        {:else if type === "number"}
+            <input type="number" name="name" bind:value={name} on:keypress={input_keypress}/>
+        {/if}
     </div>
     <div class="buttons">
         <Button disabled={!name} on_click={() => on_try_add(name)}>Save</Button>

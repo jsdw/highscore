@@ -8,11 +8,14 @@
 
     let groups: apiTypes.GroupsOutput = []
     let show_add_modal = false
+    let loading = true
 
-    get_details();
+    get_details()
 
-    function get_details() {
-        api.groups().then(g => { groups = g })
+    async function get_details() {
+        const g = await api.groups()
+        groups = g
+        loading = false
     }
 
     function add_group(name: string) {
@@ -32,19 +35,22 @@
     }
 </script>
 
-<div class="container">
-    <div class="inner">
-        {#each groups as group (group.id) }
-            <div class="group" on:click={() => show_group(group.id)}>
-                <span>{group.name}</span>
-                <Button>Show</Button>
+{#if !loading}
+    <div class="container">
+        <div class="inner">
+            {#each groups as group (group.id) }
+                <div class="group" on:click={() => show_group(group.id)}>
+                    <span>{group.name}</span>
+                    <Button>Show</Button>
+                </div>
+            {/each}
+            <div class="create">
+                <Button on_click={show_modal}>Add group</Button>
             </div>
-        {/each}
-        <div class="create">
-            <Button on_click={show_modal}>Add group</Button>
         </div>
     </div>
-</div>
+{/if}
+
 {#if show_add_modal}
     <AddNamed
         title='Add Group'
