@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="200"
+   height="200"
+   viewBox="0 0 52.916665 52.916668"
+   version="1.1"
+   id="svg16"
+   inkscape:version="1.0.1 (0767f8302a, 2020-10-17)"
+   sodipodi:docname="logo.svg">
+  <defs
+     id="defs10" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2"
+     inkscape:cx="84.45101"
+     inkscape:cy="102.9513"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     units="px"
+     inkscape:pagecheckerboard="true"
+     inkscape:window-width="1545"
+     inkscape:window-height="836"
+     inkscape:window-x="55"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid18" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata13">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#4d4d4d;fill-rule:evenodd;stroke-width:0.264583"
+       id="rect20"
+       width="52.916664"
+       height="52.916664"
+       x="0"
+       y="0"
+       rx="6"
+       ry="6" />
+    <path
+       style="fill:#233d4d;stroke-width:3.00000004;fill-opacity:1;stroke:#1a2c38;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="M 17.129012,199.0533 C 9.5494764,197.06073 3.6760509,191.43184 1.0857902,183.67803 l -0.82676418,-2.47487 -0.0936901,-79.7162 C 0.08444341,32.659572 0.1426285,21.359427 0.59130476,18.759447 2.0617762,10.238388 8.6836652,3.1682532 17.406365,0.80614934 19.568499,0.22064456 24.463203,0.18382555 100.13786,0.18382555 c 76.73854,0 80.53766,0.0295822 82.70322,0.64397593 7.70571,2.18620022 13.46203,7.67995992 15.99552,15.26592652 l 0.82654,2.474874 0.0929,80.346012 c 0.10343,89.451916 0.27692,82.955296 -2.35811,88.298956 -2.55187,5.17503 -6.91545,9.09679 -12.53232,11.2634 l -2.88013,1.11097 -81.1405,0.0712 c -78.9303,0.0693 -81.210661,0.0528 -83.715958,-0.60585 z"
+       id="path22"
+       transform="scale(0.26458333)" />
+    <rect
+       style="fill:#1a2c38;fill-opacity:1;stroke-width:0.264583"
+       id="rect871"
+       width="52.916664"
+       height="38.364582"
+       x="0"
+       y="6.614583" />
+    <path
+       d="m 43.330127,15.92 c -2.096153,-0.015 -4.192307,-0.03 -6.28846,-0.045 l 3.11346,-5.246667 v 0 z"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:46.3598px;line-height:1.25;font-family:'Padauk Book';-inkscape-font-specification:'Padauk Book, Bold';fill:#ebebeb;fill-opacity:1;stroke:none;stroke-width:1.15899"
+       id="path853-4"
+       sodipodi:nodetypes="ccccc" />
+    <g
+       aria-label="Hi"
+       id="text849"
+       style="font-style:normal;font-weight:normal;font-size:46.3598px;line-height:1.25;font-family:sans-serif;fill:#06bee1;fill-opacity:1;stroke:none;stroke-width:1.15899">
+      <path
+         d="M 32.032605,40.966644 H 26.192357 V 28.063771 H 14.738227 V 40.966644 H 8.8979791 V 11.855951 H 14.738227 V 23.4459 h 11.45413 V 11.855951 h 5.840248 z"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Padauk Book';-inkscape-font-specification:'Padauk Book, Bold';fill:#06bee1;fill-opacity:1;stroke-width:1.15899"
+         id="path851" />
+      <path
+         d="M 42.988729,40.966644 H 37.55594 V 20.820052 h 5.432789 z m 0.402938,-23.768727 -6.28846,-0.045 3.11346,-5.246667 v 0 c 0,0 2.223955,3.706592 3.175,5.291667 z"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Padauk Book';-inkscape-font-specification:'Padauk Book, Bold';fill:#06bee1;fill-opacity:1;stroke-width:1.15899"
+         id="path853"
+         sodipodi:nodetypes="cccccccccc" />
+    </g>
+  </g>
+</svg>
