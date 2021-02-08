@@ -6,26 +6,8 @@ use std::{collections::HashMap, sync::MutexGuard};
 use std::sync::Mutex;
 use chrono::prelude::{ DateTime, Utc };
 use crate::events::{ Event, EventHandler };
-use crate::store_interface::{ self, Store, GroupId, ScorableId, ScoreId, HashedPassword };
-use thiserror::Error;
+use crate::store_interface::{ self, Store, StoreError, GroupId, ScorableId, ScoreId, HashedPassword };
 
-#[derive(Error,Debug)]
-pub enum MemoryStoreError {
-    #[error("user '{0}' not found")]
-    UserNotFound(String),
-    #[error("group '{0}' not found")]
-    GroupNotFound(GroupId),
-    #[error("scorable '{0}' not found")]
-    ScorableNotFound(ScorableId),
-    #[error("score '{0}' not found")]
-    ScoreNotFound(ScoreId)
-}
-
-impl store_interface::HasErrorKind for MemoryStoreError {
-    fn error_kind(&self) -> store_interface::ErrorKind {
-        store_interface::ErrorKind::UserError
-    }
-}
 pub struct MemoryStore {
     inner: Mutex<MemoryStoreInner>
 }
@@ -84,7 +66,7 @@ impl MemoryStore {
                     }
                 }
                 Event::UpsertScore { id, scorable_id, username, value, date } => {
-                    if let Err(e) = data.upsert_score(id, scorable_id, username, value, date) {
+                    if let Err(e) = data.upsert_score(id, scorable_id, username, value, Some(date)) {
                         log::warn!("Ignoring event AddScore: {}", e);
                     }
                 }
@@ -107,57 +89,61 @@ impl MemoryStore {
 // the in-memory part of persisted_store.
 #[async_trait::async_trait]
 impl Store for MemoryStore {
-    type Error = MemoryStoreError;
-
-    async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),Self::Error> {
+    async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),StoreError> {
         self.lock().upsert_user(username, password)
     }
-    async fn check_user(&self, username: &str, password: &str) -> Result<bool,Self::Error> {
+    async fn check_user(&self, username: &str, password: &str) -> Result<bool,StoreError> {
         self.lock().check_user(username, password)
     }
-    async fn delete_user(&self, username: &str) -> Result<(),Self::Error> {
+    async fn delete_user(&self, username: &str) -> Result<(),StoreError> {
         self.lock().delete_user(username)
     }
 
-    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),Self::Error> {
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<store_interface::Group,StoreError> {
         self.lock().upsert_group(id, name)
     }
-    async fn delete_group(&self, id: &GroupId) -> Result<(),Self::Error> {
+    async fn delete_group(&self, id: &GroupId) -> Result<(),StoreError> {
         self.lock().delete_group(id)
     }
+    async fn get_group(&self, id: &GroupId) -> Result<store_interface::Group,StoreError> {
+        self.lock().get_group(id)
+    }
 
-    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error> {
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<store_interface::Scorable,StoreError> {
         self.lock().upsert_scorable(id, group_id, name)
     }
-    async fn delete_scorable(&self, id: &ScorableId) -> Result<(),Self::Error> {
+    async fn delete_scorable(&self, id: &ScorableId) -> Result<(),StoreError> {
         self.lock().delete_scorable(id)
     }
+    async fn get_scorable(&self, id: &ScorableId) -> Result<store_interface::Scorable,StoreError> {
+        self.lock().get_scorable(id)
+    }
 
-    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),Self::Error> {
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<DateTime<Utc>>) -> Result<store_interface::Score,StoreError> {
         self.lock().upsert_score(id, scorable_id, username, value, date)
     }
-    async fn delete_score(&self, id: &ScoreId) -> Result<(),Self::Error> {
+    async fn delete_score(&self, id: &ScoreId) -> Result<(),StoreError> {
         self.lock().delete_score(id)
     }
 
-    async fn groups(&self) -> Result<Vec<crate::store_interface::Group>,Self::Error> {
+    async fn groups(&self) -> Result<Vec<crate::store_interface::Group>,StoreError> {
         self.lock().groups()
     }
-    async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<store_interface::Scorable>,Self::Error> {
+    async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<store_interface::Scorable>,StoreError> {
         self.lock().scorables_in_group(group_id)
     }
-    async fn scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<store_interface::Score>,Self::Error> {
+    async fn scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<store_interface::Score>,StoreError> {
         self.lock().get_scores(scorable_id, limit)
     }
 }
 
 impl MemoryStoreInner {
     // Working with Users
-    pub fn upsert_user(&mut self, username: String, hashed_password: HashedPassword) -> Result<(),MemoryStoreError> {
+    pub fn upsert_user(&mut self, username: String, hashed_password: HashedPassword) -> Result<(),StoreError> {
         self.users.insert(username, hashed_password);
         Ok(())
     }
-    pub fn check_user(&mut self, username: &str, password: &str) -> Result<bool,MemoryStoreError> {
+    pub fn check_user(&mut self, username: &str, password: &str) -> Result<bool,StoreError> {
         // TODO: Modify this to do the hash checking in a blocking pool
         let is_valid = self.users
             .get(username)
@@ -165,9 +151,9 @@ impl MemoryStoreInner {
             .unwrap_or(false);
         Ok(is_valid)
     }
-    pub fn delete_user(&mut self, username: &str) -> Result<(),MemoryStoreError> {
+    pub fn delete_user(&mut self, username: &str) -> Result<(),StoreError> {
         self.users.remove(username)
-            .ok_or_else(|| MemoryStoreError::UserNotFound(username.to_owned()))?;
+            .ok_or_else(|| StoreError::UserNotFound(username.to_owned()))?;
         // Remove all scores associated with this user, too:
         for group in self.scores.values_mut() {
             for scores in group.scorables.values_mut() {
@@ -178,75 +164,95 @@ impl MemoryStoreInner {
     }
 
     // Editing Groups
-    pub fn upsert_group(&mut self, id: GroupId, name: String) -> Result<(),MemoryStoreError> {
+    pub fn upsert_group(&mut self, id: GroupId, name: String) -> Result<store_interface::Group,StoreError> {
         self.scores
             .entry(id)
             .or_insert_with(|| Group::empty())
-            .name = name;
-        Ok(())
+            .name = name.clone();
+        Ok(store_interface::Group { id, name })
     }
-    pub fn delete_group(&mut self, id: &GroupId) -> Result<(),MemoryStoreError> {
+    pub fn delete_group(&mut self, id: &GroupId) -> Result<(),StoreError> {
         self.scores.remove(id)
-            .ok_or(MemoryStoreError::GroupNotFound(*id))
+            .ok_or(StoreError::GroupNotFound(*id))
             .map(|_| ())
+    }
+    pub fn get_group(&self, id: &GroupId) -> Result<store_interface::Group,StoreError> {
+        self.scores.get(id)
+            .map(|g| store_interface::Group { id: *id, name: g.name.to_owned() })
+            .ok_or(StoreError::GroupNotFound(*id))
     }
 
     // Editing Scorables
-    pub fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),MemoryStoreError> {
+    pub fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<store_interface::Scorable,StoreError> {
         if let Some(group) = self.scores.get_mut(&group_id) {
             group.scorables
                 .entry(id)
                 .or_insert_with(|| Scorable::empty())
-                .name = name;
+                .name = name.clone();
             self.scorable_to_group.insert(id, group_id);
-            Ok(())
+            Ok(store_interface::Scorable { id, name })
         } else {
-            Err(MemoryStoreError::GroupNotFound(group_id))
+            Err(StoreError::GroupNotFound(group_id))
         }
     }
-    pub fn delete_scorable(&mut self, id: &ScorableId) -> Result<(),MemoryStoreError> {
+    pub fn delete_scorable(&mut self, id: &ScorableId) -> Result<(),StoreError> {
         let group_id = self.scorable_to_group
             .remove(id)
-            .ok_or(MemoryStoreError::ScorableNotFound(*id))?;
+            .ok_or(StoreError::ScorableNotFound(*id))?;
         self.scores.get_mut(&group_id)
-            .ok_or(MemoryStoreError::GroupNotFound(group_id))?
+            .ok_or(StoreError::GroupNotFound(group_id))?
             .scorables.remove(&id)
-            .ok_or(MemoryStoreError::ScorableNotFound(*id))
+            .ok_or(StoreError::ScorableNotFound(*id))
             .map(|_| ())
+    }
+    pub fn get_scorable(&self, id: &ScorableId) -> Result<store_interface::Scorable,StoreError> {
+        let group_id = self.scorable_to_group.get(id)
+            .ok_or(StoreError::ScorableNotFound(*id))?;
+        let group = self.scores.get(group_id)
+            .ok_or(StoreError::GroupNotFound(*group_id))?;
+        group.scorables.get(id)
+            .map(|s| store_interface::Scorable { id: *id, name: s.name.to_owned() })
+            .ok_or(StoreError::ScorableNotFound(*id))
     }
 
     // Editing Scores
-    pub fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),MemoryStoreError> {
+    pub fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<DateTime<Utc>>) -> Result<store_interface::Score,StoreError> {
         if !self.users.contains_key(&username) {
-            return Err(MemoryStoreError::UserNotFound(username));
+            return Err(StoreError::UserNotFound(username));
         }
         let group_id = self.scorable_to_group.get(&scorable_id)
-            .ok_or(MemoryStoreError::ScorableNotFound(scorable_id))?;
+            .ok_or(StoreError::ScorableNotFound(scorable_id))?;
         let group = self.scores.get_mut(group_id)
-            .ok_or(MemoryStoreError::GroupNotFound(*group_id))?;
+            .ok_or(StoreError::GroupNotFound(*group_id))?;
         if let Some(scorable) = group.scorables.get_mut(&scorable_id) {
-            scorable.scores.insert(id, Score { username, value, date });
+            let date = date.unwrap_or_else(|| Utc::now());
+            scorable.scores.insert(id, Score { username: username.clone(), value, date });
             self.score_to_scorable.insert(id, scorable_id);
-            Ok(())
+            Ok(store_interface::Score {
+                id,
+                username,
+                value,
+                date
+            })
         } else {
-            Err(MemoryStoreError::ScorableNotFound(scorable_id))
+            Err(StoreError::ScorableNotFound(scorable_id))
         }
     }
-    pub fn delete_score(&mut self, id: &ScoreId) -> Result<(),MemoryStoreError> {
+    pub fn delete_score(&mut self, id: &ScoreId) -> Result<(),StoreError> {
         let scorable_id = self.score_to_scorable.remove(id)
-            .ok_or(MemoryStoreError::ScoreNotFound(*id))?;
+            .ok_or(StoreError::ScoreNotFound(*id))?;
         let group_id = self.scorable_to_group.get(&scorable_id)
-            .ok_or(MemoryStoreError::ScorableNotFound(scorable_id))?;
+            .ok_or(StoreError::ScorableNotFound(scorable_id))?;
         let group = self.scores.get_mut(group_id)
-            .ok_or(MemoryStoreError::GroupNotFound(*group_id))?;
+            .ok_or(StoreError::GroupNotFound(*group_id))?;
         group.scorables.get_mut(&scorable_id)
-            .ok_or(MemoryStoreError::ScorableNotFound(scorable_id))?
+            .ok_or(StoreError::ScorableNotFound(scorable_id))?
             .scores.remove(id)
-            .ok_or(MemoryStoreError::ScoreNotFound(*id))
+            .ok_or(StoreError::ScoreNotFound(*id))
             .map(|_| ())
     }
 
-    pub fn groups(&self) -> Result<Vec<crate::store_interface::Group>,MemoryStoreError> {
+    pub fn groups(&self) -> Result<Vec<crate::store_interface::Group>,StoreError> {
         let groups = self.scores
             .iter()
             .map(|(id,group)| store_interface::Group {
@@ -256,9 +262,9 @@ impl MemoryStoreInner {
             .collect();
         Ok(groups)
     }
-    pub fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<crate::store_interface::Scorable>,MemoryStoreError> {
+    pub fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<crate::store_interface::Scorable>,StoreError> {
         let scorables = self.scores.get(&group_id)
-            .ok_or(MemoryStoreError::GroupNotFound(*group_id))?
+            .ok_or(StoreError::GroupNotFound(*group_id))?
             .iter_scorables()
             .map(|(id,scorable)| store_interface::Scorable {
                 id: id,
@@ -267,13 +273,13 @@ impl MemoryStoreInner {
             .collect();
         Ok(scorables)
     }
-    pub fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<crate::store_interface::Score>,MemoryStoreError> {
+    pub fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<crate::store_interface::Score>,StoreError> {
         let group_id = self.scorable_to_group.get(&scorable_id)
-            .ok_or(MemoryStoreError::ScorableNotFound(*scorable_id))?;
+            .ok_or(StoreError::ScorableNotFound(*scorable_id))?;
         let group = self.scores.get(group_id)
-            .ok_or(MemoryStoreError::GroupNotFound(*group_id))?;
+            .ok_or(StoreError::GroupNotFound(*group_id))?;
         let mut scores: Vec<_> = group.scorables.get(scorable_id)
-            .ok_or(MemoryStoreError::ScorableNotFound(*scorable_id))?
+            .ok_or(StoreError::ScorableNotFound(*scorable_id))?
             .scores.iter()
             .collect();
         // highest score first:

@@ -1,9 +1,8 @@
 //! A convenient response type to use in our API handlers. Any errors that come
 //! from things implementing the `Store` interface can be cast to these.
 
-use std::fmt::Display;
 use std::io::Cursor;
-use crate::store_interface::{ ErrorKind, HasErrorKind };
+use crate::store_interface::{ StoreError };
 use rocket::request::Request;
 use rocket::response::{self, Response, Responder};
 use rocket::http::{ Status, ContentType };
@@ -28,13 +27,10 @@ impl HttpError {
 
 // Anything that is a valid `store_interface` Error can also
 // be converted into an HttpError:
-impl <E: HasErrorKind + Display> From<E> for HttpError {
-    fn from(e: E) -> Self {
-        let status_code = match e.error_kind() {
-            ErrorKind::UserError => 400
-        };
+impl From<StoreError> for HttpError {
+    fn from(e: StoreError) -> Self {
         HttpError {
-            code: status_code,
+            code: 400,
             message: e.to_string()
         }
     }

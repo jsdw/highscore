@@ -1,9 +1,9 @@
 //! Rocket API routes to provide access to the backend.
 
-use crate::store_interface::{ HashedPassword, Store, GroupId, ScorableId, ScoreId, Group, Scorable, Score };
-use crate::persisted_store::{ PersistedStore };
+use crate::store_interface::{ HashedPassword, GroupId, ScorableId, ScoreId, Group, Scorable, Score };
 use crate::user::{ self, User };
 use crate::http_result::{ HttpError, HttpResult };
+use crate::state;
 use serde::{ Serialize, Deserialize };
 use rocket_contrib::json::Json;
 use rocket::{State, http::CookieJar};
@@ -19,8 +19,10 @@ pub fn routes() -> Vec<rocket::Route> {
         delete_user,
         upsert_group,
         delete_group,
+        get_group,
         upsert_scorable,
         delete_scorable,
+        get_scorable,
         upsert_score,
         delete_score,
         groups,
@@ -40,8 +42,8 @@ struct LoginInput {
 struct Empty {}
 
 #[post("/login", data = "<body>")]
-async fn login(store: State<'_, PersistedStore>, cookies: &CookieJar<'_>, body: Json<LoginInput>) -> HttpResult<Json<Empty>> {
-    let is_valid = store.check_user(&body.username, &body.password).await?;
+async fn login(state: State<'_, state::State>, cookies: &CookieJar<'_>, body: Json<LoginInput>) -> HttpResult<Json<Empty>> {
+    let is_valid = state.store.check_user(&body.username, &body.password).await?;
     if is_valid {
         user::add_user_cookie(cookies, body.username.to_string());
         Ok(Json(Empty {}))
@@ -76,13 +78,13 @@ struct UpsertUserInput {
 }
 
 #[post("/upsert_user", data = "<body>")]
-async fn upsert_user(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertUserInput>) -> HttpResult<Json<Empty>> {
+async fn upsert_user(_user: User, state: State<'_, state::State>, body: Json<UpsertUserInput>) -> HttpResult<Json<Empty>> {
     let new_user = body.into_inner();
     let plain_password = new_user.password;
     let hashed_password = tokio::task::spawn_blocking(move || HashedPassword::from_plain_password(&plain_password))
         .await
         .map_err(|_| HttpError::server_error("Failed to join thread after hashing password"))?;
-    store.upsert_user(new_user.username, hashed_password).await?;
+    state.store.upsert_user(new_user.username, hashed_password).await?;
     Ok(Json(Empty {}))
 }
 
@@ -93,8 +95,8 @@ struct DeleteUserInput {
 }
 
 #[post("/delete_user", data = "<body>")]
-async fn delete_user(_user: User, store: State<'_, PersistedStore>, body: Json<DeleteUserInput>) -> HttpResult<Json<Empty>> {
-    store.delete_user(&body.username).await?;
+async fn delete_user(_user: User, state: State<'_, state::State>, body: Json<DeleteUserInput>) -> HttpResult<Json<Empty>> {
+    state.store.delete_user(&body.username).await?;
     Ok(Json(Empty {}))
 }
 
@@ -106,16 +108,29 @@ struct UpsertGroupInput {
 }
 
 #[derive(Serialize)]
-struct UpsertGroupOutput {
-    id: GroupId
+struct GroupOutput {
+    id: GroupId,
+    name: String
 }
 
 #[post("/upsert_group", data = "<body>")]
-async fn upsert_group(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertGroupInput>) -> HttpResult<Json<UpsertGroupOutput>> {
+async fn upsert_group(_user: User, state: State<'_, state::State>, body: Json<UpsertGroupInput>) -> HttpResult<Json<GroupOutput>> {
     let group = body.into_inner();
     let id = group.id.unwrap_or_else(GroupId::new);
-    store.upsert_group(id, group.name).await?;
-    Ok(Json(UpsertGroupOutput { id }))
+    state.store.upsert_group(id, group.name.clone()).await?;
+    Ok(Json(GroupOutput { id, name: group.name }))
+}
+
+
+#[derive(Deserialize)]
+struct GetGroupInput {
+    id: GroupId
+}
+
+#[post("/get_group", data = "<body>")]
+async fn get_group(_user: User, state: State<'_, state::State>, body: Json<GetGroupInput>) -> HttpResult<Json<GroupOutput>> {
+    let group = state.store.get_group(&body.id).await?;
+    Ok(Json(GroupOutput { id: group.id, name: group.name }))
 }
 
 
@@ -125,8 +140,8 @@ struct DeleteGroupInput {
 }
 
 #[post("/delete_group", data = "<body>")]
-async fn delete_group(_user: User, store: State<'_, PersistedStore>, body: Json<DeleteGroupInput>) -> HttpResult<Json<Empty>> {
-    store.delete_group(&body.id).await?;
+async fn delete_group(_user: User, state: State<'_, state::State>, body: Json<DeleteGroupInput>) -> HttpResult<Json<Empty>> {
+    state.store.delete_group(&body.id).await?;
     Ok(Json(Empty {}))
 }
 
@@ -139,16 +154,17 @@ struct UpsertScorableInput {
 }
 
 #[derive(Serialize)]
-struct UpsertScorableOutput {
-    id: ScorableId
+struct ScorableOutput {
+    id: ScorableId,
+    name: String
 }
 
 #[post("/upsert_scorable", data = "<body>")]
-async fn upsert_scorable(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertScorableInput>) -> HttpResult<Json<UpsertScorableOutput>> {
+async fn upsert_scorable(_user: User, state: State<'_, state::State>, body: Json<UpsertScorableInput>) -> HttpResult<Json<ScorableOutput>> {
     let scorable = body.into_inner();
     let id = scorable.id.unwrap_or_else(ScorableId::new);
-    store.upsert_scorable(id, scorable.group_id, scorable.name).await?;
-    Ok(Json(UpsertScorableOutput { id }))
+    state.store.upsert_scorable(id, scorable.group_id, scorable.name.clone()).await?;
+    Ok(Json(ScorableOutput { id, name: scorable.name }))
 }
 
 
@@ -158,9 +174,21 @@ struct DeleteScorableInput {
 }
 
 #[post("/delete_scorable", data = "<body>")]
-async fn delete_scorable(_user: User, store: State<'_, PersistedStore>, body: Json<DeleteScorableInput>) -> HttpResult<Json<Empty>> {
-    store.delete_scorable(&body.id).await?;
+async fn delete_scorable(_user: User, state: State<'_, state::State>, body: Json<DeleteScorableInput>) -> HttpResult<Json<Empty>> {
+    state.store.delete_scorable(&body.id).await?;
     Ok(Json(Empty {}))
+}
+
+
+#[derive(Deserialize)]
+struct GetScorableInput {
+    id: ScorableId
+}
+
+#[post("/get_scorable", data = "<body>")]
+async fn get_scorable(_user: User, state: State<'_, state::State>, body: Json<GetScorableInput>) -> HttpResult<Json<ScorableOutput>> {
+    let scorable = state.store.get_scorable(&body.id).await?;
+    Ok(Json(ScorableOutput { id: scorable.id, name: scorable.name }))
 }
 
 
@@ -170,7 +198,7 @@ struct UpsertScoreInput {
     scorable_id: ScorableId,
     username: String,
     value: i64,
-    date: DateTime<Utc>
+    date: Option<DateTime<Utc>>
 }
 
 #[derive(Serialize)]
@@ -179,10 +207,10 @@ struct UpsertScoreOutput {
 }
 
 #[post("/upsert_score", data = "<body>")]
-async fn upsert_score(_user: User, store: State<'_, PersistedStore>, body: Json<UpsertScoreInput>) -> HttpResult<Json<UpsertScoreOutput>> {
+async fn upsert_score(_user: User, state: State<'_, state::State>, body: Json<UpsertScoreInput>) -> HttpResult<Json<UpsertScoreOutput>> {
     let score = body.into_inner();
     let id = score.id.unwrap_or_else(ScoreId::new);
-    store.upsert_score(id, score.scorable_id, score.username, score.value, score.date).await?;
+    state.store.upsert_score(id, score.scorable_id, score.username, score.value, score.date).await?;
     Ok(Json(UpsertScoreOutput { id }))
 }
 
@@ -193,15 +221,15 @@ struct DeleteScoreInput {
 }
 
 #[post("/delete_score", data = "<body>")]
-async fn delete_score(_user: User, store: State<'_, PersistedStore>, body: Json<DeleteScoreInput>) -> HttpResult<Json<Empty>> {
-    store.delete_score(&body.id).await?;
+async fn delete_score(_user: User, state: State<'_, state::State>, body: Json<DeleteScoreInput>) -> HttpResult<Json<Empty>> {
+    state.store.delete_score(&body.id).await?;
     Ok(Json(Empty {}))
 }
 
 
 #[get("/groups")]
-async fn groups(_user: User, store: State<'_, PersistedStore>) -> HttpResult<Json<Vec<Group>>> {
-    let groups = store.groups().await?;
+async fn groups(_user: User, state: State<'_, state::State>) -> HttpResult<Json<Vec<Group>>> {
+    let groups = state.store.groups().await?;
     Ok(Json(groups))
 }
 
@@ -212,8 +240,8 @@ struct ScorablesInGroupInput {
 }
 
 #[post("/scorables_in_group", data = "<body>")]
-async fn scorables_in_group(_user: User, store: State<'_, PersistedStore>, body: Json<ScorablesInGroupInput>) -> HttpResult<Json<Vec<Scorable>>> {
-    let scorables = store.scorables_in_group(&body.group_id).await?;
+async fn scorables_in_group(_user: User, state: State<'_, state::State>, body: Json<ScorablesInGroupInput>) -> HttpResult<Json<Vec<Scorable>>> {
+    let scorables = state.store.scorables_in_group(&body.group_id).await?;
     Ok(Json(scorables))
 }
 
@@ -225,7 +253,7 @@ struct ScoresInput {
 }
 
 #[post("/scores", data = "<body>")]
-async fn scores(_user: User, store: State<'_, PersistedStore>, body: Json<ScoresInput>) -> HttpResult<Json<Vec<Score>>> {
-    let scores = store.scores(&body.scorable_id, body.limit.clone()).await?;
+async fn scores(_user: User, state: State<'_, state::State>, body: Json<ScoresInput>) -> HttpResult<Json<Vec<Score>>> {
+    let scores = state.store.scores(&body.scorable_id, body.limit.clone()).await?;
     Ok(Json(scores))
 }

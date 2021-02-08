@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use crate::events::{ EventHandler, Event };
-use crate::memory_store::{ MemoryStore, MemoryStoreError };
-use crate::store_interface::{ Store, GroupId, ScoreId, ScorableId, Group, Score, HashedPassword };
+use crate::memory_store::{ MemoryStore };
+use crate::store_interface::{ Store, StoreError, GroupId, ScoreId, ScorableId, Group, Score, Scorable, HashedPassword };
 
 /// This combines an in-memory `Store` implementation with eventual
 /// persistence in the form of append-only event logs.
@@ -11,8 +11,6 @@ pub struct PersistedStore {
     /// In-memory data derived from events:
     memory_store: MemoryStore
 }
-
-pub type PersistedStoreError = MemoryStoreError;
 
 impl PersistedStore {
     /// Load in our data from a file
@@ -36,9 +34,7 @@ impl PersistedStore {
 // to check that inputs are sensible.
 #[async_trait::async_trait]
 impl Store for PersistedStore {
-    type Error = PersistedStoreError;
-
-    async fn upsert_user(&self, username: String, hashed_password: HashedPassword) -> Result<(),Self::Error> {
+    async fn upsert_user(&self, username: String, hashed_password: HashedPassword) -> Result<(),StoreError> {
         let res = self.memory_store.upsert_user(username.clone(), hashed_password.clone()).await?;
         self.events.push(Event::UpsertUser {
             username: username,
@@ -46,10 +42,10 @@ impl Store for PersistedStore {
         }).await;
         Ok(res)
     }
-    async fn check_user(&self, username: &str, password: &str) -> Result<bool,Self::Error> {
+    async fn check_user(&self, username: &str, password: &str) -> Result<bool,StoreError> {
         self.memory_store.check_user(username, password).await
     }
-    async fn delete_user(&self, username: &str) -> Result<(),Self::Error> {
+    async fn delete_user(&self, username: &str) -> Result<(),StoreError> {
         let res = self.memory_store.delete_user(username).await?;
         self.events.push(Event::DeleteUser {
             username: username.to_owned()
@@ -57,7 +53,7 @@ impl Store for PersistedStore {
         Ok(res)
     }
 
-    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),Self::Error> {
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<Group,StoreError> {
         let res = self.memory_store.upsert_group(id, name.clone()).await?;
         self.events.push(Event::UpsertGroup {
             id,
@@ -65,15 +61,18 @@ impl Store for PersistedStore {
         }).await;
         Ok(res)
     }
-    async fn delete_group(&self, id: &GroupId) -> Result<(),Self::Error> {
+    async fn delete_group(&self, id: &GroupId) -> Result<(),StoreError> {
         let res = self.memory_store.delete_group(id).await?;
         self.events.push(Event::DeleteGroup {
             id: *id,
         }).await;
         Ok(res)
     }
+    async fn get_group(&self, id: &GroupId) -> Result<Group,StoreError> {
+        self.memory_store.get_group(id).await
+    }
 
-    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),Self::Error> {
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<Scorable,StoreError> {
         let res = self.memory_store.upsert_scorable(id, group_id, name.clone()).await?;
         self.events.push(Event::UpsertScorable {
             id,
@@ -82,26 +81,29 @@ impl Store for PersistedStore {
         }).await;
         Ok(res)
     }
-    async fn delete_scorable(&self, id: &ScorableId) -> Result<(),Self::Error> {
+    async fn delete_scorable(&self, id: &ScorableId) -> Result<(),StoreError> {
         let res = self.memory_store.delete_scorable(id).await?;
         self.events.push(Event::DeleteScorable {
             id: *id
         }).await;
         Ok(res)
     }
+    async fn get_scorable(&self, id: &ScorableId) -> Result<Scorable,StoreError> {
+        self.memory_store.get_scorable(id).await
+    }
 
-    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: chrono::DateTime<chrono::Utc>) -> Result<(),Self::Error> {
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<chrono::DateTime<chrono::Utc>>) -> Result<Score,StoreError> {
         let res = self.memory_store.upsert_score(id, scorable_id, username.clone(), value, date).await?;
         self.events.push(Event::UpsertScore {
-            date,
-            id,
-            value,
-            username,
+            date: res.date,
+            id: res.id,
+            value: res.value,
+            username: res.username.clone(),
             scorable_id
         }).await;
         Ok(res)
     }
-    async fn delete_score(&self, id: &ScoreId) -> Result<(),Self::Error> {
+    async fn delete_score(&self, id: &ScoreId) -> Result<(),StoreError> {
         let res = self.memory_store.delete_score(id).await?;
         self.events.push(Event::DeleteScore {
             id: *id
@@ -109,13 +111,13 @@ impl Store for PersistedStore {
         Ok(res)
     }
 
-    async fn groups(&self) -> Result<Vec<Group>,Self::Error> {
+    async fn groups(&self) -> Result<Vec<Group>,StoreError> {
         self.memory_store.groups().await
     }
-    async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<crate::store_interface::Scorable>,Self::Error> {
+    async fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<Scorable>,StoreError> {
         self.memory_store.scorables_in_group(group_id).await
     }
-    async fn scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<Score>,Self::Error> {
+    async fn scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<Score>,StoreError> {
         self.memory_store.scores(scorable_id, limit).await
     }
 }

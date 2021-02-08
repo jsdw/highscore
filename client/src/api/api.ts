@@ -23,7 +23,7 @@ export function current_user(): Promise<CurrentUserOutput> {
 }
 
 export type UpsertUserInput = {
-    username: string,
+    username: string
     password: string
 }
 export function upsert_user(opts: UpsertUserInput): Promise<{}> {
@@ -38,12 +38,14 @@ export function delete_user(opts: DeleteUserInput): Promise<{}> {
 }
 
 export type UpsertGroupInput = {
+    id?: string
     name: string
 }
-export type UpsertGroupOutput = {
+export type GroupOutput = {
     id: string
+    name: string
 }
-export function upsert_group(opts: UpsertGroupInput): Promise<UpsertGroupOutput> {
+export function upsert_group(opts: UpsertGroupInput): Promise<GroupOutput> {
     return client("upsert_group", opts)
 }
 
@@ -54,16 +56,31 @@ export function delete_group(opts: DeleteGroupInput): Promise<{}> {
     return client("delete_group", opts)
 }
 
-export type UpsertScorableInput = {
+export type GetGroupInput = {
     id: string
+}
+export function get_group(opts: GetGroupInput): Promise<GroupOutput> {
+    return client("get_group", opts)
+}
+
+export type UpsertScorableInput = {
+    id?: string
     group_id: string
     name: string
 }
-export type UpsertScorableOutput = {
+export type ScorableOutput = {
+    id: string
+    name: string
+}
+export function upsert_scorable(opts: UpsertScorableInput): Promise<ScorableOutput> {
+    return client("upsert_scorable", opts)
+}
+
+export type GetScorableInput = {
     id: string
 }
-export function upsert_scorable(opts: UpsertScorableInput): Promise<UpsertScorableOutput> {
-    return client("upsert_scorable", opts)
+export function get_scorable(opts: GetScorableInput): Promise<ScorableOutput> {
+    return client("get_scorable", opts)
 }
 
 export type DeleteScorableInput = {
@@ -74,12 +91,12 @@ export function delete_scorable(opts: DeleteScorableInput): Promise<{}> {
 }
 
 export type UpsertScoreInput = {
-    id: string
+    id?: string
     scorable_id: string
     username: string
     value: number
     /** ISO date string */
-    date: string
+    date?: string
 }
 export type UpsertScoreOutput = {
     id: string

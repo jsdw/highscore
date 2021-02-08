@@ -4,18 +4,23 @@
     import AddNamed from './AddNamed.svelte'
     import Button from './Button.svelte'
 
-    export let on_select_group: (id: string) => void
+    export let on_select_scorable: (id: string) => void
+    export let group_id: string
 
-    let groups: apiTypes.GroupsOutput = []
+    let scorables: apiTypes.ScorablesInGroupOutput = []
+    let group_name: string = ""
     let show_add_modal = false
 
-    get_details();
+    get_details()
 
-    function get_details() {
-        api.groups().then(g => { groups = g })
+    async function get_details() {
+        const res = await api.scorables_in_group({ group_id })
+        const group = await api.get_group({ id: group_id })
+        scorables = res
+        group_name = group.name
     }
 
-    function add_group(name: string) {
+    function add_scorable(name: string) {
         hide_modal()
         api.upsert_group({ name }).finally(get_details)
     }
@@ -27,16 +32,18 @@
         show_add_modal = false
     }
 
-    function show_group(id: string) {
-        on_select_group(id)
+    function show_scorable(id: string) {
+        on_select_scorable(id)
     }
+
 </script>
 
+<h1>{group_name}</h1>
 <div class="container">
     <div class="inner">
-        {#each groups as group (group.id) }
-            <div class="group" on:click={() => show_group(group.id)}>
-                <span>{group.name}</span>
+        {#each scorables as scorable (scorable.id) }
+            <div class="scorable" on:click={() => show_scorable(scorable.id)}>
+                <span>{scorable.name}</span>
                 <Button>Show</Button>
             </div>
         {/each}
@@ -47,14 +54,18 @@
 </div>
 {#if show_add_modal}
     <AddNamed
-        title='Add Group'
+        title='Add Scorable'
         label='Name'
-        on_try_add={add_group}
+        on_try_add={add_scorable}
         on_cancel={hide_modal}
     />
 {/if}
 
 <style>
+    h1 {
+        margin: 1em;
+        text-align: center;
+    }
     .container {
         display: flex;
         justify-content: center;
@@ -63,7 +74,7 @@
     .inner {
         flex-grow: 1;
     }
-    .group {
+    .scorable {
         cursor: pointer;
         user-select: none;
         margin-bottom: 1em;
@@ -74,7 +85,7 @@
         padding: 1em;
         width: 100%;
     }
-    .group > span {
+    .scorable > span {
         margin-right: 1em;
     }
 </style>

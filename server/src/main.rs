@@ -8,6 +8,8 @@ mod password;
 mod user;
 mod http_result;
 mod api;
+mod index_html;
+mod state;
 
 use anyhow::Context;
 use structopt::StructOpt;
@@ -80,13 +82,19 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
     rocket_config.port = opts.port;
 
     let mut rocket = rocket::custom(rocket_config)
-        .manage(store)
+        .manage(state::State {
+            store: Box::new(store),
+            static_files: opts.static_files.clone()
+        })
         .mount("/api", api::routes());
 
     // Serve static files if asked to:
     if let Some(path) = opts.static_files {
         rocket = rocket.mount("/", rocket_contrib::serve::StaticFiles::from(path));
     }
+
+    // Serve index.html for any path that doesn't match the above (naive history support):
+    rocket = rocket.mount("/", index_html::index_route());
 
     rocket.launch().await?;
 
