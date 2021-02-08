@@ -54,16 +54,17 @@ pub enum StoreError {
     ScoreNotFound(ScoreId)
 }
 
-#[derive(Debug,Serialize,Clone)]
+#[derive(Debug,Serialize,Clone,Ord,PartialOrd,Eq,PartialEq)]
 pub struct Group {
     pub id: GroupId,
     pub name: String
 }
 
-#[derive(Debug,Serialize,Clone)]
+#[derive(Debug,Serialize,Clone,Ord,PartialOrd,Eq,PartialEq)]
 pub struct Scorable {
+    // Name comes first for Ord impl:
+    pub name: String,
     pub id: ScorableId,
-    pub name: String
 }
 
 #[derive(Debug,Serialize,Clone)]
@@ -74,7 +75,7 @@ pub struct Score {
     pub date: DateTime<Utc>
 }
 
-#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
+#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,PartialOrd,Ord,Debug,Clone,Copy)]
 pub struct GroupId(Uuid);
 
 impl GroupId {
@@ -88,7 +89,7 @@ impl fmt::Display for GroupId {
     }
 }
 
-#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
+#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,PartialOrd,Ord,Debug,Clone,Copy)]
 pub struct ScorableId(Uuid);
 
 impl ScorableId {
@@ -102,7 +103,7 @@ impl fmt::Display for ScorableId {
     }
 }
 
-#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,Debug,Clone,Copy)]
+#[derive(Serialize,Deserialize,Hash,PartialEq,Eq,PartialOrd,Ord,Debug,Clone,Copy)]
 pub struct ScoreId(Uuid);
 
 impl ScoreId {

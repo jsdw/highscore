@@ -253,17 +253,18 @@ impl MemoryStoreInner {
     }
 
     pub fn groups(&self) -> Result<Vec<crate::store_interface::Group>,StoreError> {
-        let groups = self.scores
+        let mut groups: Vec<_> = self.scores
             .iter()
             .map(|(id,group)| store_interface::Group {
                 id: *id,
                 name: group.name.to_owned()
             })
             .collect();
+        groups.sort();
         Ok(groups)
     }
     pub fn scorables_in_group(&self, group_id: &GroupId) -> Result<Vec<crate::store_interface::Scorable>,StoreError> {
-        let scorables = self.scores.get(&group_id)
+        let mut scorables: Vec<_> = self.scores.get(&group_id)
             .ok_or(StoreError::GroupNotFound(*group_id))?
             .iter_scorables()
             .map(|(id,scorable)| store_interface::Scorable {
@@ -271,6 +272,7 @@ impl MemoryStoreInner {
                 name: scorable.name.to_owned()
             })
             .collect();
+        scorables.sort();
         Ok(scorables)
     }
     pub fn get_scores(&self, scorable_id: &ScorableId, limit: Option<usize>) -> Result<Vec<crate::store_interface::Score>,StoreError> {
