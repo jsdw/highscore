@@ -48,7 +48,7 @@
             </div>
         {/each}
         <div class="create">
-            <Button on_click={show_modal}>Add group</Button>
+            <Button on_click={show_modal}>Add scores</Button>
         </div>
     </div>
 </div>
