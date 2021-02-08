@@ -28,6 +28,8 @@
 
 <div class="container">
     <div class="login-box">
+        <h1>Highscore</h1>
+
         <div class="row">
             <label for="username">Username</label>
             <input autocomplete="username" autocapitalize="none" name="username" bind:value={username} on:keypress={input_keypress}/>
@@ -58,11 +60,17 @@
     }
     .login-box {
         background-color: var(--charcoal);
-        padding: 1.25em;
+        padding: 20px;
         margin: 10px;
         border-radius: 3px;
         box-shadow: 0px 3px 11px 1px rgba(0,0,0,0.5);
         width: 270px;
+    }
+    h1 {
+        margin: 0;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--charcoal-dark2);
+        margin-bottom: 20px;
     }
     .row {
         margin-bottom: 1em;

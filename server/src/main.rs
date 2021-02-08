@@ -53,7 +53,7 @@ struct ServeOpts {
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let opts = Opts::from_args();
-    println!("{:?}", opts);
+    println!("{:#?}", opts);
 
     match opts {
         Opts::AddUser(opts) => add_user(opts).await,

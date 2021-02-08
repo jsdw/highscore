@@ -22,6 +22,7 @@
         outline: none;
         padding: 0.4em 1em;
         cursor: pointer;
+        box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.2);
 
         color: var(--white-light2);
         border: 1px solid var(--blue-dark2);

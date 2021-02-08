@@ -1,6 +1,6 @@
 use std::path::{ PathBuf };
 use include_dir::Dir;
-use rocket::http::{ContentType, Header};
+use rocket::http::ContentType;
 use rocket::Response;
 
 pub static PROJECT_DIR: Dir = include_dir::include_dir!("../client/public");

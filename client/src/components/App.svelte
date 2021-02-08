@@ -19,6 +19,7 @@
 	} | {
 		kind: "scores"
 		id: string
+		group_id: string
 	}
 	let page : Page = extract_page_from_hash()
 
@@ -28,7 +29,7 @@
 		if (hash_parts[0] === "group" && hash_parts[1]) {
 			return { kind: "group", id: hash_parts[1] }
 		} else if (hash_parts[0] === "scores" && hash_parts[1]) {
-			return { kind: "scores", id: hash_parts[1] }
+			return { kind: "scores", group_id: hash_parts[1], id: hash_parts[2] }
 		} else {
 			return { kind: "groups" }
 		}
@@ -37,7 +38,7 @@
 		if (page.kind === "group") {
 			document.location.hash = `/group/${page.id}`
 		} else if (page.kind === "scores") {
-			document.location.hash = `/scores/${page.id}`
+			document.location.hash = `/scores/${page.group_id}/${page.id}`
 		} else {
 			document.location.hash = ""
 		}
@@ -73,8 +74,8 @@
 	function on_select_group(id: string) {
 		change_page({ kind: "group", id })
 	}
-	function on_select_scorable(id: string) {
-		change_page({ kind: "scores", id })
+	function on_select_scorable(id: string, group_id: string) {
+		change_page({ kind: "scores", id, group_id })
 	}
 
 	function change_password(password: string) {
@@ -105,9 +106,9 @@
 				{#if page.kind === "groups"}
 					<Groups {on_select_group}/>
 				{:else if page.kind === "group"}
-					<Scorables {on_select_scorable} group_id={page.id}/>
+					<Scorables on_go_back={go_home} {on_select_scorable} group_id={page.id}/>
 				{:else if page.kind === "scores"}
-					<Scores current_user={current_user} scorable_id={page.id}/>
+					<Scores on_go_back={on_select_group} current_user={current_user} group_id={page.group_id} scorable_id={page.id}/>
 				{/if}
 			</div>
 		</main>

@@ -7,7 +7,7 @@
     export let on_select_group: (id: string) => void
 
     let groups: apiTypes.GroupsOutput = []
-    let show_add_modal = false
+    let showing_add_modal = false
     let loading = true
 
     get_details()
@@ -19,15 +19,14 @@
     }
 
     function add_group(name: string) {
-        hide_modal()
+        hide_add_modal()
         api.upsert_group({ name }).finally(get_details)
     }
-
-    function show_modal() {
-        show_add_modal = true
+    function show_add_modal() {
+        showing_add_modal = true
     }
-    function hide_modal() {
-        show_add_modal = false
+    function hide_add_modal() {
+        showing_add_modal = false
     }
 
     function show_group(id: string) {
@@ -44,19 +43,19 @@
                     <Button>Show</Button>
                 </div>
             {/each}
-            <div class="create">
-                <Button on_click={show_modal}>Add group</Button>
+            <div class="buttons">
+                <Button on_click={show_add_modal}>Add group</Button>
             </div>
         </div>
     </div>
 {/if}
 
-{#if show_add_modal}
+{#if showing_add_modal}
     <AddNamed
         title='Add Group'
-        label='Name'
+        description='Name'
         on_try_add={add_group}
-        on_cancel={hide_modal}
+        on_cancel={hide_add_modal}
     />
 {/if}
 

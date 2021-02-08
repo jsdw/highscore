@@ -8,6 +8,9 @@
     export let on_cancel: () => void
     export let on_try_add: (name: string) => void
     export let type: "text" | "password" | "number" = "text"
+    export let width: number = 325
+    export let confirm_text = "Save"
+    export let cancel_text = "Cancel"
 
     let name = ""
 
@@ -26,7 +29,7 @@
 
 </script>
 
-<Modal title={title} on_close={on_cancel}>
+<Modal title={title} on_close={on_cancel} width={width}>
     <div class="row">
         <label for={label}>{description}</label>
         {#if type === "password"}
@@ -38,14 +41,17 @@
         {/if}
     </div>
     <div class="buttons">
-        <Button disabled={!name} on_click={() => on_try_add(name)}>Save</Button>
-        <Button color="red" on_click={on_cancel}>Cancel</Button>
+        <Button color="red" disabled={!name} on_click={() => on_try_add(name)}>{confirm_text}</Button>
+        <Button on_click={on_cancel}>{cancel_text}</Button>
     </div>
 </Modal>
 
 <style>
     label {
-        margin-bottom: 0.25em;
+        margin-bottom: 0.5em;
+    }
+    input {
+        width: 100%;
     }
     .row {
         margin-top: 1em;
