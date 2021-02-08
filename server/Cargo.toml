@@ -24,6 +24,7 @@ uuid = { version = "0.8.2", features = ["serde", "v4"] }
 dashmap = "4.0.2"
 rpassword = "5.0.1"
 time = { version = "0.2.25", features = ["std"] }
+include_dir = "0.6.0"
 
 [dependencies.rocket]
 git = "https://github.com/SergioBenitez/Rocket"
