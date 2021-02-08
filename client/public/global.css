@@ -82,5 +82,5 @@ input {
 }
 
 input:disabled {
-	color: #ccc;
+	color: var(--white-dark2);
 }

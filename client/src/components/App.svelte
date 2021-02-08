@@ -101,13 +101,15 @@
 					</span>
 				</div>
 			</header>
-			{#if page.kind === "groups"}
-				<Groups {on_select_group}/>
-			{:else if page.kind === "group"}
-				<Scorables {on_select_scorable} group_id={page.id}/>
-			{:else if page.kind === "scores"}
-				<Scores current_user={current_user} scorable_id={page.id}/>
-			{/if}
+			<div class="content">
+				{#if page.kind === "groups"}
+					<Groups {on_select_group}/>
+				{:else if page.kind === "group"}
+					<Scorables {on_select_scorable} group_id={page.id}/>
+				{:else if page.kind === "scores"}
+					<Scores current_user={current_user} scorable_id={page.id}/>
+				{/if}
+			</div>
 		</main>
 	{:else}
 		<Login on_login={user => current_user = user}/>
@@ -117,7 +119,7 @@
 {#if show_settings_modal}
 	<AddNamed
 		title="Edit User"
-		label="Set Password"
+		description="Set Password"
 		type="password"
 		on_cancel={() => { show_settings_modal = false }}
 		on_try_add={change_password}
@@ -125,11 +127,18 @@
 {/if}
 
 <style>
+	main {
+		margin: 0;
+		padding: 0;
+		min-height: 100vh;
+	}
 	header {
 		background-color: var(--charcoal-light2);
 		padding: 15px;
+		flex-shrink: 0;
 	}
-	h1 {
+
+	header h1 {
 		margin: 0;
 		margin-bottom: 0px;
 		margin-bottom: 10px;
@@ -137,7 +146,7 @@
 		cursor: pointer;
 		user-select: none;
 	}
-	.greetings {
+	header .greetings {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { api } from '../api'
+    import Button from './Button.svelte'
 
     export let on_login: (username: string) => void
 
@@ -29,7 +30,7 @@
     <div class="login-box">
         <div class="row">
             <label for="username">Username</label>
-            <input name="username" bind:value={username} on:keypress={input_keypress}/>
+            <input autocomplete="username" autocapitalize="none" name="username" bind:value={username} on:keypress={input_keypress}/>
         </div>
 
         <div class="row">
@@ -37,7 +38,7 @@
             <input name="password" type="password" bind:value={password} on:keypress={input_keypress}/>
         </div>
 
-        <button on:click={login}>Login</button>
+        <Button on_click={login}>Login</Button>
         {#if is_invalid}
             <div class="invalid">
                 Incorrect details provided; try again

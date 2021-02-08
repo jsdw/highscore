@@ -72,21 +72,25 @@
         {#if scores.length}
             <table>
                 <tr>
-                    <th>Name</th>
-                    <th>Score</th>
-                    <th>Date</th>
-                    <th></th>
+                    <th class="padding"></th>
+                    <th class="name">Name</th>
+                    <th class="score">Score</th>
+                    <th class="date">Date</th>
+                    <th class="delete"></th>
+                    <th class="padding"></th>
                 </tr>
                 {#each scores as score (score.id) }
                     <tr>
-                        <td>{score.username}</td>
-                        <td>{score.value}</td>
-                        <td>{pretty_print_iso_date(score.date)}</td>
-                        <td>
+                        <td class="padding"></td>
+                        <td class="name">{score.username}</td>
+                        <td class="score">{score.value}</td>
+                        <td class="date">{pretty_print_iso_date(score.date)}</td>
+                        <td class="delete">
                             {#if score.username === current_user}
                                 <Link on_click={() => show_confirm_delete_modal(score.id)}>delete</Link>
                             {/if}
                         </td>
+                        <td class="padding"></td>
                     </tr>
                 {/each}
             </table>
@@ -99,7 +103,7 @@
 {#if showing_add_score_modal}
     <AddNamed
         title="Add Score"
-        label="Score"
+        description="Score"
         type="number"
         on_cancel={hide_add_score_modal}
         on_try_add={add_score}
@@ -120,20 +124,37 @@
         text-align: center;
     }
     .container {
-        margin: 1em;
+        margin: 1em 0em;
         display: flex;
         align-items: center;
         flex-direction: column;
+        overflow-x: auto;
     }
     .buttons {
         margin-bottom: 1em;
     }
     table {
-        width: 700px;
-        max-width: calc(100% - 2em);
+        width: 100%;
+        border-collapse: collapse;
     }
     td, th {
         text-align: center;
-        padding: 0.25em 0.5em;
+        padding: 0.75em 0.5em;
     }
+    .padding {
+        width: 20px;
+        padding: 0px;
+    }
+    tr:nth-child(2n) {
+        background-color: var(--charcoal-dark1);
+    }
+
+    @media (max-width: 400px) {
+		table .date {
+			display: none;
+		}
+        table .padding {
+            width: 5px;
+        }
+	}
 </style>

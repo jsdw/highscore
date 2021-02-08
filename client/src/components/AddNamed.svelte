@@ -3,12 +3,20 @@
     import Button from './Button.svelte'
 
     export let title: string
-    export let label: string
+    export let description: string
+    export let label: string = "value"
     export let on_cancel: () => void
     export let on_try_add: (name: string) => void
     export let type: "text" | "password" | "number" = "text"
 
     let name = ""
+
+    let input_el: HTMLInputElement | null = null
+    $: focus_input_el(input_el)
+
+    function focus_input_el(input_el: HTMLInputElement | null) {
+        if (input_el) input_el.focus()
+    }
 
     function input_keypress(e: KeyboardEvent) {
         if (e.key === "Enter") {
@@ -20,13 +28,13 @@
 
 <Modal title={title} on_close={on_cancel}>
     <div class="row">
-        <label for="name">{label}</label>
+        <label for={label}>{description}</label>
         {#if type === "password"}
-            <input type="password" name="name" bind:value={name} on:keypress={input_keypress}/>
+            <input bind:this={input_el} type="password" name={label} bind:value={name} on:keypress={input_keypress}/>
         {:else if type === "text"}
-            <input name="name" bind:value={name} on:keypress={input_keypress}/>
+            <input bind:this={input_el} name={label} bind:value={name} on:keypress={input_keypress}/>
         {:else if type === "number"}
-            <input type="number" name="name" bind:value={name} on:keypress={input_keypress}/>
+            <input bind:this={input_el} type="number" name={label} bind:value={name} on:keypress={input_keypress}/>
         {/if}
     </div>
     <div class="buttons">
