@@ -83,11 +83,11 @@
     }
 </script>
 
-{#if !loading && name}
-    <div class="back-container">
-        <BackArrow on_click={() => on_go_back(group_id)}/>
-    </div>
-    <div class="scores-container">
+<div class="back-container">
+<BackArrow on_click={() => on_go_back(group_id)}/>
+</div>
+<div class="scores-container">
+    {#if !loading && name}
         <h1>{name}</h1>
         <div class="settings">
             (<Link on_click={show_edit_scorable_modal}>edit scorable</Link>)
@@ -123,10 +123,10 @@
         {:else}
             No scores have been set
         {/if}
-    </div>
-{:else if !loading && !name}
-    <h1>Scorable not found</h1>
-{/if}
+    {:else if !loading && !name}
+        <h1>Scorable not found</h1>
+    {/if}
+</div>
 
 {#if showing_add_score_modal}
     <AddNamed

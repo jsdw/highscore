@@ -84,6 +84,10 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
     let mut rocket_config = rocket::config::Config::default();
     rocket_config.port = opts.port;
     rocket_config.address = opts.address;
+    // Generate a new key each time; this will invalidate existing sessions
+    // on a restart, but that isn't really a big deal for this app:
+    rocket_config.secret_key = rocket::config::SecretKey::generate()
+        .ok_or_else(|| anyhow::anyhow!("Failed to generate a secret key: not enough system randomness"))?;
 
     let mut rocket = rocket::custom(rocket_config)
         .manage(state::State {

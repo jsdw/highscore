@@ -61,32 +61,32 @@
 
 </script>
 
-{#if !loading && group_name}
-    <div class="container">
-        <BackArrow on_click={() => on_go_back(group_id)}/>
-        <h1>{group_name}</h1>
-        <div class="settings">
-            (<Link on_click={show_edit_group_modal}>edit group</Link>)
-        </div>
-        <div class="inner">
-            {#each scorables as scorable (scorable.id) }
-                <div class="scorable" on:click={() => show_scorable(scorable.id)}>
-                    <span>{scorable.name}</span>
-                    <Button>Show</Button>
-                </div>
-            {:else}
-                <div class="no-scores">
-                    No scores have been set in thie group.
-                </div>
-            {/each}
-            <div class="create">
-                <Button on_click={show_add_modal}>Add scores</Button>
+<div class="container">
+    <BackArrow on_click={() => on_go_back(group_id)}/>
+    {#if !loading && group_name}
+    <h1>{group_name}</h1>
+    <div class="settings">
+        (<Link on_click={show_edit_group_modal}>edit group</Link>)
+    </div>
+    <div class="inner">
+        {#each scorables as scorable (scorable.id) }
+            <div class="scorable" on:click={() => show_scorable(scorable.id)}>
+                <span>{scorable.name}</span>
+                <Button>Show</Button>
             </div>
+        {:else}
+            <div class="no-scores">
+                No scores have been set in thie group.
+            </div>
+        {/each}
+        <div class="create">
+            <Button on_click={show_add_modal}>Add scores</Button>
         </div>
     </div>
-{:else if !loading && !group_name}
-    <h1>Group not found</h1>
-{/if}
+    {:else if !loading && !group_name}
+        <h1>Group not found</h1>
+    {/if}
+</div>
 
 {#if showing_add_modal}
     <AddNamed

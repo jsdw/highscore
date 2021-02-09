@@ -6,6 +6,7 @@
 	import Scores from './Scores.svelte'
 	import Login from './Login.svelte'
 	import Link from './Link.svelte'
+import { onDestroy } from 'svelte';
 
 	let loading = true
 	let current_user: string | null = null
@@ -22,6 +23,12 @@
 		group_id: string
 	}
 	let page : Page = extract_page_from_hash()
+
+	// Poll for the current user status. This will force us to a
+	// login page when the session expires.
+	get_current_user()
+	let current_user_interval = setInterval(get_current_user, 1000)
+	onDestroy(() => clearInterval(current_user_interval))
 
 	//** A quick and dirty router:
 	function extract_page_from_hash(): Page {
@@ -52,11 +59,13 @@
 	})
 	//**
 
-	api.current_user().then(user => {
-		current_user = user.username
-	}).finally(() => {
-		loading = false
-	})
+	function get_current_user() {
+		api.current_user().then(user => {
+			current_user = user.username
+		}).finally(() => {
+			loading = false
+		})
+	}
 
 	function logout() {
 		api.logout().then(_ => {
