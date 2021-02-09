@@ -13,6 +13,9 @@ pub struct MemoryStore {
 }
 
 struct MemoryStoreInner {
+    /// When was the last change made? This may update despite
+    /// no changes being made, but must update if changes are made.
+    last_changed: DateTime<Utc>,
     /// Users (mapping of username to password)
     users: HashMap<String, HashedPassword>,
     /// Groups of scorables that themselves have scores on
@@ -27,6 +30,7 @@ impl MemoryStore {
     pub async fn from_events(events: &EventHandler) -> anyhow::Result<MemoryStore> {
         use futures::stream::StreamExt;
         let mut data = MemoryStoreInner {
+            last_changed: Utc::now(),
             users: HashMap::new(),
             scores: HashMap::new(),
             // Indexes:
@@ -89,6 +93,10 @@ impl MemoryStore {
 // the in-memory part of persisted_store.
 #[async_trait::async_trait]
 impl Store for MemoryStore {
+    async fn last_changed(&self) -> DateTime<Utc> {
+        self.lock().last_changed()
+    }
+
     async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),StoreError> {
         self.lock().upsert_user(username, password)
     }
@@ -140,10 +148,11 @@ impl Store for MemoryStore {
 impl MemoryStoreInner {
     // Working with Users
     pub fn upsert_user(&mut self, username: String, hashed_password: HashedPassword) -> Result<(),StoreError> {
+        self.update_last_changed();
         self.users.insert(username, hashed_password);
         Ok(())
     }
-    pub fn check_user(&mut self, username: &str, password: &str) -> Result<bool,StoreError> {
+    pub fn check_user(&self, username: &str, password: &str) -> Result<bool,StoreError> {
         // TODO: Modify this to do the hash checking in a blocking pool
         let is_valid = self.users
             .get(username)
@@ -152,6 +161,7 @@ impl MemoryStoreInner {
         Ok(is_valid)
     }
     pub fn delete_user(&mut self, username: &str) -> Result<(),StoreError> {
+        self.update_last_changed();
         self.users.remove(username)
             .ok_or_else(|| StoreError::UserNotFound(username.to_owned()))?;
         // Remove all scores associated with this user, too:
@@ -165,6 +175,7 @@ impl MemoryStoreInner {
 
     // Editing Groups
     pub fn upsert_group(&mut self, id: GroupId, name: String) -> Result<(),StoreError> {
+        self.update_last_changed();
         self.scores
             .entry(id)
             .or_insert_with(|| Group::empty())
@@ -172,6 +183,7 @@ impl MemoryStoreInner {
         Ok(())
     }
     pub fn delete_group(&mut self, id: &GroupId) -> Result<(),StoreError> {
+        self.update_last_changed();
         self.scores.remove(id)
             .ok_or(StoreError::GroupNotFound(*id))
             .map(|_| ())
@@ -184,6 +196,7 @@ impl MemoryStoreInner {
 
     // Editing Scorables
     pub fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),StoreError> {
+        self.update_last_changed();
         if let Some(group) = self.scores.get_mut(&group_id) {
             group.scorables
                 .entry(id)
@@ -197,8 +210,9 @@ impl MemoryStoreInner {
     }
     pub fn delete_scorable(&mut self, id: &ScorableId) -> Result<(),StoreError> {
         let group_id = self.scorable_to_group
-            .remove(id)
-            .ok_or(StoreError::ScorableNotFound(*id))?;
+        .remove(id)
+        .ok_or(StoreError::ScorableNotFound(*id))?;
+        self.update_last_changed();
         self.scores.get_mut(&group_id)
             .ok_or(StoreError::GroupNotFound(group_id))?
             .scorables.remove(&id)
@@ -220,6 +234,7 @@ impl MemoryStoreInner {
         if !self.users.contains_key(&username) {
             return Err(StoreError::UserNotFound(username));
         }
+        self.update_last_changed();
         let group_id = self.scorable_to_group.get(&scorable_id)
             .ok_or(StoreError::ScorableNotFound(scorable_id))?;
         let group = self.scores.get_mut(group_id)
@@ -233,6 +248,7 @@ impl MemoryStoreInner {
         }
     }
     pub fn delete_score(&mut self, id: &ScoreId) -> Result<(),StoreError> {
+        self.update_last_changed();
         let scorable_id = self.score_to_scorable.remove(id)
             .ok_or(StoreError::ScoreNotFound(*id))?;
         let group_id = self.scorable_to_group.get(&scorable_id)
@@ -291,6 +307,13 @@ impl MemoryStoreInner {
             })
             .collect();
         Ok(scores)
+    }
+
+    fn last_changed(&self) -> DateTime<Utc> {
+        self.last_changed
+    }
+    fn update_last_changed(&mut self) {
+        self.last_changed = Utc::now();
     }
 }
 

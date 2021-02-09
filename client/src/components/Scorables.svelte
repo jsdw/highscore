@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { api as apiTypes } from '../api'
     import { api } from '../api'
+    import { on_last_changed } from '../stores'
     import BackArrow from './BackArrow.svelte'
     import AddNamed from './AddNamed.svelte'
     import EditNamed from './EditNamed.svelte'
@@ -17,7 +18,7 @@
     let showing_edit_group_modal = false
     let loading = true
 
-    get_details()
+    on_last_changed(get_details)
 
     async function get_details() {
         const group = await api.get_group({ id: group_id }).catch(() => undefined)

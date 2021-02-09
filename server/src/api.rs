@@ -12,6 +12,7 @@ use chrono::{ DateTime, Utc };
 /// Ths entrypoint; gather the routes decalred below:
 pub fn routes() -> Vec<rocket::Route> {
     routes![
+        last_changed,
         login,
         logout,
         current_user,
@@ -29,6 +30,18 @@ pub fn routes() -> Vec<rocket::Route> {
         scorables_in_group,
         scores,
     ]
+}
+
+
+#[derive(Serialize)]
+struct LastChangedOutput {
+    date: DateTime<Utc>
+}
+
+#[get("/last_changed")]
+async fn last_changed(_user: User, state: State<'_, state::State>) -> HttpResult<Json<LastChangedOutput>> {
+    let date = state.store.last_changed().await;
+    Ok(Json(LastChangedOutput { date }))
 }
 
 

@@ -7,6 +7,9 @@ use chrono::prelude::{ DateTime, Utc };
 
 #[async_trait::async_trait]
 pub trait Store {
+    /// When was the last change made?
+    async fn last_changed(&self) -> DateTime<Utc>;
+
     /// Add/update a user
     async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),StoreError>;
     /// Check that a user exists with the password provided

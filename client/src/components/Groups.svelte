@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { api as apiTypes } from '../api'
     import { api } from '../api'
+    import { on_last_changed } from '../stores'
     import AddNamed from './AddNamed.svelte'
     import Button from './Button.svelte'
 
@@ -10,7 +11,7 @@
     let showing_add_modal = false
     let loading = true
 
-    get_details()
+    on_last_changed(get_details)
 
     async function get_details() {
         const g = await api.groups()

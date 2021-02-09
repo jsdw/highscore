@@ -34,6 +34,10 @@ impl PersistedStore {
 // to check that inputs are sensible.
 #[async_trait::async_trait]
 impl Store for PersistedStore {
+    async fn last_changed(&self) -> chrono::DateTime<chrono::Utc> {
+        self.memory_store.last_changed().await
+    }
+
     async fn upsert_user(&self, username: String, hashed_password: HashedPassword) -> Result<(),StoreError> {
         let res = self.memory_store.upsert_user(username.clone(), hashed_password.clone()).await?;
         self.events.push(Event::UpsertUser {

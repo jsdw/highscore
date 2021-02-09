@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { api as apiTypes } from '../api'
     import { api } from '../api'
+    import { on_last_changed } from '../stores'
     import BackArrow from './BackArrow.svelte'
     import Confirm from './Confirm.svelte'
     import AddNamed from './AddNamed.svelte'
@@ -20,7 +21,7 @@
     let score_id_to_delete = ""
     let loading = true
 
-    get_details()
+    on_last_changed(get_details)
 
     async function get_details() {
         const scorable = await api.get_scorable({ id: scorable_id }).catch(() => undefined)

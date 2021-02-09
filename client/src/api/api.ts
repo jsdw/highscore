@@ -2,6 +2,13 @@ import { client } from "./client"
 
 // A mindless copy of api.rs from the server code.
 
+export type LastChangedOutput = {
+    date: string
+}
+export function last_changed(): Promise<LastChangedOutput> {
+    return client("last_changed")
+}
+
 export type LoginInput = {
     username: string
     password: string
