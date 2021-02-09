@@ -20,6 +20,7 @@
     let showing_confirm_delete_modal = false
     let score_id_to_delete = ""
     let loading = true
+    $: can_delete_some_scores = scores.some(s => s.username === current_user)
 
     on_last_changed(get_details)
 
@@ -103,7 +104,9 @@
                     <th class="name">Name</th>
                     <th class="score">Score</th>
                     <th class="date">Date</th>
-                    <th class="delete"></th>
+                    {#if can_delete_some_scores}
+                        <th class="delete"></th>
+                    {/if}
                     <th class="padding"></th>
                 </tr>
                 {#each scores as score (score.id) }
@@ -112,11 +115,13 @@
                         <td class="name">{score.username}</td>
                         <td class="score">{score.value}</td>
                         <td class="date">{pretty_print_iso_date(score.date)}</td>
-                        <td class="delete">
-                            {#if score.username === current_user}
-                                <div class="delete-icon" on:click={() => show_confirm_delete_modal(score.id)}>&#215;</div>
-                            {/if}
-                        </td>
+                        {#if can_delete_some_scores}
+                            <td class="delete">
+                                {#if score.username === current_user}
+                                    <div class="delete-icon" on:click={() => show_confirm_delete_modal(score.id)}>&#215;</div>
+                                {/if}
+                            </td>
+                        {/if}
                         <td class="padding"></td>
                     </tr>
                 {/each}

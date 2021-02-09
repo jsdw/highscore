@@ -59,8 +59,9 @@ pub enum StoreError {
 
 #[derive(Debug,Serialize,Clone,Ord,PartialOrd,Eq,PartialEq)]
 pub struct Group {
+    // Name comes first for Ord impl:
+    pub name: String,
     pub id: GroupId,
-    pub name: String
 }
 
 #[derive(Debug,Serialize,Clone,Ord,PartialOrd,Eq,PartialEq)]
