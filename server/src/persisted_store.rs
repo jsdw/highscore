@@ -53,13 +53,13 @@ impl Store for PersistedStore {
         Ok(res)
     }
 
-    async fn upsert_group(&self, id: GroupId, name: String) -> Result<Group,StoreError> {
-        let res = self.memory_store.upsert_group(id, name.clone()).await?;
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),StoreError> {
+        self.memory_store.upsert_group(id, name.clone()).await?;
         self.events.push(Event::UpsertGroup {
             id,
             name
         }).await;
-        Ok(res)
+        Ok(())
     }
     async fn delete_group(&self, id: &GroupId) -> Result<(),StoreError> {
         let res = self.memory_store.delete_group(id).await?;
@@ -72,14 +72,14 @@ impl Store for PersistedStore {
         self.memory_store.get_group(id).await
     }
 
-    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<Scorable,StoreError> {
-        let res = self.memory_store.upsert_scorable(id, group_id, name.clone()).await?;
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),StoreError> {
+        self.memory_store.upsert_scorable(id, group_id, name.clone()).await?;
         self.events.push(Event::UpsertScorable {
             id,
             group_id,
-            name: name
+            name
         }).await;
-        Ok(res)
+        Ok(())
     }
     async fn delete_scorable(&self, id: &ScorableId) -> Result<(),StoreError> {
         let res = self.memory_store.delete_scorable(id).await?;
@@ -92,16 +92,16 @@ impl Store for PersistedStore {
         self.memory_store.get_scorable(id).await
     }
 
-    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<chrono::DateTime<chrono::Utc>>) -> Result<Score,StoreError> {
-        let res = self.memory_store.upsert_score(id, scorable_id, username.clone(), value, date).await?;
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: chrono::DateTime<chrono::Utc>) -> Result<(),StoreError> {
+        self.memory_store.upsert_score(id, scorable_id, username.clone(), value, date).await?;
         self.events.push(Event::UpsertScore {
-            date: res.date,
-            id: res.id,
-            value: res.value,
-            username: res.username.clone(),
+            date,
+            id,
+            value,
+            username: username,
             scorable_id
         }).await;
-        Ok(res)
+        Ok(())
     }
     async fn delete_score(&self, id: &ScoreId) -> Result<(),StoreError> {
         let res = self.memory_store.delete_score(id).await?;

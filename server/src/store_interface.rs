@@ -15,21 +15,21 @@ pub trait Store {
     async fn delete_user(&self, username: &str) -> Result<(),StoreError>;
 
     /// Add/update a group
-    async fn upsert_group(&self, id: GroupId, name: String) -> Result<Group,StoreError>;
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),StoreError>;
     /// Delete a group
     async fn delete_group(&self, id: &GroupId) -> Result<(),StoreError>;
     /// Get a group
     async fn get_group(&self, id: &GroupId) -> Result<Group,StoreError>;
 
     /// Add/update a thing to save scores against
-    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<Scorable,StoreError>;
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),StoreError>;
     /// Delete a scorable
     async fn delete_scorable(&self, id: &ScorableId) -> Result<(),StoreError>;
     /// Get a scorable
     async fn get_scorable(&self, id: &ScorableId) -> Result<Scorable,StoreError>;
 
     /// Add/update a score against something
-    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<DateTime<Utc>>) -> Result<Score,StoreError>;
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),StoreError>;
     /// Delete a score against something
     async fn delete_score(&self, id: &ScoreId) -> Result<(),StoreError>;
 

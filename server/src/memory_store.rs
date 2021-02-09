@@ -66,7 +66,7 @@ impl MemoryStore {
                     }
                 }
                 Event::UpsertScore { id, scorable_id, username, value, date } => {
-                    if let Err(e) = data.upsert_score(id, scorable_id, username, value, Some(date)) {
+                    if let Err(e) = data.upsert_score(id, scorable_id, username, value, date) {
                         log::warn!("Ignoring event AddScore: {}", e);
                     }
                 }
@@ -99,7 +99,7 @@ impl Store for MemoryStore {
         self.lock().delete_user(username)
     }
 
-    async fn upsert_group(&self, id: GroupId, name: String) -> Result<store_interface::Group,StoreError> {
+    async fn upsert_group(&self, id: GroupId, name: String) -> Result<(),StoreError> {
         self.lock().upsert_group(id, name)
     }
     async fn delete_group(&self, id: &GroupId) -> Result<(),StoreError> {
@@ -109,7 +109,7 @@ impl Store for MemoryStore {
         self.lock().get_group(id)
     }
 
-    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<store_interface::Scorable,StoreError> {
+    async fn upsert_scorable(&self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),StoreError> {
         self.lock().upsert_scorable(id, group_id, name)
     }
     async fn delete_scorable(&self, id: &ScorableId) -> Result<(),StoreError> {
@@ -119,7 +119,7 @@ impl Store for MemoryStore {
         self.lock().get_scorable(id)
     }
 
-    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<DateTime<Utc>>) -> Result<store_interface::Score,StoreError> {
+    async fn upsert_score(&self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),StoreError> {
         self.lock().upsert_score(id, scorable_id, username, value, date)
     }
     async fn delete_score(&self, id: &ScoreId) -> Result<(),StoreError> {
@@ -164,12 +164,12 @@ impl MemoryStoreInner {
     }
 
     // Editing Groups
-    pub fn upsert_group(&mut self, id: GroupId, name: String) -> Result<store_interface::Group,StoreError> {
+    pub fn upsert_group(&mut self, id: GroupId, name: String) -> Result<(),StoreError> {
         self.scores
             .entry(id)
             .or_insert_with(|| Group::empty())
-            .name = name.clone();
-        Ok(store_interface::Group { id, name })
+            .name = name;
+        Ok(())
     }
     pub fn delete_group(&mut self, id: &GroupId) -> Result<(),StoreError> {
         self.scores.remove(id)
@@ -183,14 +183,14 @@ impl MemoryStoreInner {
     }
 
     // Editing Scorables
-    pub fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<store_interface::Scorable,StoreError> {
+    pub fn upsert_scorable(&mut self, id: ScorableId, group_id: GroupId, name: String) -> Result<(),StoreError> {
         if let Some(group) = self.scores.get_mut(&group_id) {
             group.scorables
                 .entry(id)
                 .or_insert_with(|| Scorable::empty())
-                .name = name.clone();
+                .name = name;
             self.scorable_to_group.insert(id, group_id);
-            Ok(store_interface::Scorable { id, name })
+            Ok(())
         } else {
             Err(StoreError::GroupNotFound(group_id))
         }
@@ -216,7 +216,7 @@ impl MemoryStoreInner {
     }
 
     // Editing Scores
-    pub fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: Option<DateTime<Utc>>) -> Result<store_interface::Score,StoreError> {
+    pub fn upsert_score(&mut self, id: ScoreId, scorable_id: ScorableId, username: String, value: i64, date: DateTime<Utc>) -> Result<(),StoreError> {
         if !self.users.contains_key(&username) {
             return Err(StoreError::UserNotFound(username));
         }
@@ -225,15 +225,9 @@ impl MemoryStoreInner {
         let group = self.scores.get_mut(group_id)
             .ok_or(StoreError::GroupNotFound(*group_id))?;
         if let Some(scorable) = group.scorables.get_mut(&scorable_id) {
-            let date = date.unwrap_or_else(|| Utc::now());
             scorable.scores.insert(id, Score { username: username.clone(), value, date });
             self.score_to_scorable.insert(id, scorable_id);
-            Ok(store_interface::Score {
-                id,
-                username,
-                value,
-                date
-            })
+            Ok(())
         } else {
             Err(StoreError::ScorableNotFound(scorable_id))
         }

@@ -210,9 +210,10 @@ struct UpsertScoreOutput {
 #[post("/upsert_score", data = "<body>")]
 async fn upsert_score(user: User, state: State<'_, state::State>, body: Json<UpsertScoreInput>) -> HttpResult<Json<UpsertScoreOutput>> {
     let score = body.into_inner();
+    let date = score.date.unwrap_or_else(|| Utc::now());
     let username = score.username.unwrap_or_else(|| user.name.to_owned());
     let id = score.id.unwrap_or_else(ScoreId::new);
-    state.store.upsert_score(id, score.scorable_id, username, score.value, score.date).await?;
+    state.store.upsert_score(id, score.scorable_id, username, score.value, date).await?;
     Ok(Json(UpsertScoreOutput { id }))
 }
 
