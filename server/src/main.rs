@@ -87,12 +87,15 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
 
     let mut rocket = rocket::custom(rocket_config)
         .manage(state::State {
+            // Ensure that we don't need anything more than what
+            // the `store_interface::Store` trait provides by
+            // only providing that.
             store: Box::new(store),
             static_files: opts.static_files.clone()
         })
         .mount("/api", api::routes());
 
-    // Serve static files if asked to, else serve embedded files
+    // Serve external static files if asked to (useful for dev), else serve embedded files:
     if let Some(path) = opts.static_files {
         rocket = rocket.mount("/", rocket_contrib::serve::StaticFiles::from(path));
     } else {
