@@ -2,6 +2,10 @@
 
 A small mobile-friendly app for tracking scores on things that can be easily self-hosted.
 
+| ![Login](screenshots/login.jpg)         | ![Groups](screenshots/groups.jpg)       | ![Edit Group](screenshots/edit_group.jpg) |
+|-----------------------------------------|-----------------------------------------|-------------------------------------------|
+| ![Scorables](screenshots/scorables.jpg) | ![Add Score](screenshots/add_score.jpg) | ![Scores](screenshots/scores.jpg)         |
+
 ## Running
 
 Read below to find out how to install the app.
