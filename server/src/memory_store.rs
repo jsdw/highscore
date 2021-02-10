@@ -104,7 +104,13 @@ impl Store for MemoryStore {
         self.lock().upsert_user(username, password)
     }
     async fn check_user(&self, username: &str, password: &str) -> Result<bool,StoreError> {
-        self.lock().check_user(username, password)
+        let hashed_password = self.lock()
+            .get_hashed_password(username)
+            .ok_or_else(|| StoreError::UserNotFound(username.to_owned()))?;
+        let res = tokio::task::block_in_place(||
+            hashed_password.verify_plain_password(password)
+        );
+        Ok(res)
     }
     async fn delete_user(&self, username: &str) -> Result<(),StoreError> {
         self.lock().delete_user(username)
@@ -158,13 +164,8 @@ impl MemoryStoreInner {
         self.users.insert(username, hashed_password);
         Ok(())
     }
-    pub fn check_user(&self, username: &str, password: &str) -> Result<bool,StoreError> {
-        // TODO: Modify this to do the hash checking in a blocking pool
-        let is_valid = self.users
-            .get(username)
-            .map(|hash| hash.verify_plain_password(password))
-            .unwrap_or(false);
-        Ok(is_valid)
+    pub fn get_hashed_password(&self, username: &str) -> Option<HashedPassword> {
+        self.users.get(username).map(|u| u.clone())
     }
     pub fn delete_user(&mut self, username: &str) -> Result<(),StoreError> {
         self.update_last_changed();

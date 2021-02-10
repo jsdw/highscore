@@ -56,7 +56,15 @@ pub enum StoreError {
     #[error("scorable '{0}' not found")]
     ScorableNotFound(ScorableId),
     #[error("score '{0}' not found")]
-    ScoreNotFound(ScoreId)
+    ScoreNotFound(ScoreId),
+    #[error("internal error: {0}")]
+    InternalError(anyhow::Error)
+}
+
+impl From<anyhow::Error> for StoreError {
+    fn from(err: anyhow::Error) -> StoreError {
+        StoreError::InternalError(err)
+    }
 }
 
 #[derive(Debug,Serialize,Clone,Ord,PartialOrd,Eq,PartialEq)]
