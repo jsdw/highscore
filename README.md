@@ -1,6 +1,6 @@
 # Highscore
 
-A small mobile-friendly app for tracking scores on things that can be easily self-hosted.
+A small mobile-friendly app for tracking scores on things. It can be distributed as a single binary and so is easy to self host somewhere.
 
 | ![Login](screenshots/login.jpg)         | ![Groups](screenshots/groups.jpg)       | ![Edit Group](screenshots/edit_group.jpg) |
 |-----------------------------------------|-----------------------------------------|-------------------------------------------|
