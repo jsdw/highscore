@@ -7,10 +7,13 @@ use serde::{ Serialize, Deserialize };
 use std::sync::Arc;
 use std::time::Duration;
 use std::path::PathBuf;
-use tokio::{io::AsyncWriteExt, sync::Mutex};
+use tokio::{io::{AsyncReadExt, AsyncWriteExt}, sync::Mutex};
 use futures::stream::Stream;
 use std::marker::Unpin;
 use crate::store_interface::{ GroupId, ScorableId, ScoreId, HashedPassword };
+
+const FILE_HEADER: &str = "__highscore_persisted_events__";
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "ty")]
 pub enum Event {
@@ -54,6 +57,16 @@ impl Events {
         self.in_memory.lock().await.push(ev)
     }
 
+    /// Check that the file we've pointed to has the header expected.
+    async fn nonnempty_file_is_valid_db(file: &mut tokio::fs::File) -> bool {
+        let mut buf: [u8; FILE_HEADER.len()] = [0; FILE_HEADER.len()];
+        if let Err(e) = file.read_exact(&mut buf).await {
+            log::error!("Cannot read header from database: {}", e);
+            return false
+        }
+        buf == FILE_HEADER.as_bytes()
+    }
+
     async fn read_from_disk(&self) -> anyhow::Result<impl Stream<Item = Result<Event,anyhow::Error>> + Unpin + Send + Sync + 'static> {
         use tokio::io::AsyncBufReadExt;
 
@@ -61,7 +74,7 @@ impl Events {
         // stream if needbe, or return a stream from the file otherwise.
         type BoxedStream = std::pin::Pin<Box<dyn Stream<Item = Result<Event,anyhow::Error>> + Send + Sync + 'static>>;
 
-        let file = match tokio::fs::File::open(&self.file_path).await {
+        let mut file = match tokio::fs::File::open(&self.file_path).await {
             Ok(file) => file,
             Err(e) => {
                 // Not an error if no file exists yet, but something you may want to know:
@@ -69,6 +82,14 @@ impl Events {
                 return Ok::<BoxedStream,_>(Box::pin(futures::stream::empty()))
             }
         };
+
+        // Check that the file is a valid database before buffering up.
+        if !Events::nonnempty_file_is_valid_db(&mut file).await {
+            anyhow::bail!(
+                "File {} does not appear to be a valid database",
+                self.file_path.to_string_lossy()
+            )
+        }
 
         let buf = tokio::io::BufReader::new(file);
 
@@ -92,10 +113,25 @@ impl Events {
         if events.is_empty() {
             return Ok(())
         }
+
         let mut file = tokio::fs::OpenOptions::new()
             .append(true)
             .create(true)
+            .read(true)
             .open(&self.file_path).await?;
+
+        // If the file is new, write a header to it so that
+        // we can verify it's a valid database before writing to it.
+        // else, read the header into memory and confirm it's valid.
+        if file.metadata().await?.len() == 0 {
+            file.write_all(FILE_HEADER.as_bytes()).await?;
+        } else if !Events::nonnempty_file_is_valid_db(&mut file).await {
+            anyhow::bail!(
+                "File {} does not appear to be a valid database",
+                self.file_path.to_string_lossy()
+            )
+        }
+
         for event in &*events {
             let event_json = serde_json::to_vec(&event)?;
             // Newline first prevents accidental assumptions that

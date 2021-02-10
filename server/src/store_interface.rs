@@ -10,6 +10,8 @@ pub trait Store {
     /// When was the last change made?
     async fn last_changed(&self) -> DateTime<Utc>;
 
+    /// List users
+    async fn users(&self) -> Result<Vec<String>,StoreError>;
     /// Add/update a user
     async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),StoreError>;
     /// Check that a user exists with the password provided

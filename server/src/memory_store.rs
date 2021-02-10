@@ -97,6 +97,9 @@ impl Store for MemoryStore {
         self.lock().last_changed()
     }
 
+    async fn users(&self) -> Result<Vec<String>,StoreError> {
+        self.lock().users()
+    }
     async fn upsert_user(&self, username: String, password: HashedPassword) -> Result<(),StoreError> {
         self.lock().upsert_user(username, password)
     }
@@ -147,6 +150,9 @@ impl Store for MemoryStore {
 
 impl MemoryStoreInner {
     // Working with Users
+    pub fn users(&self) -> Result<Vec<String>,StoreError> {
+        Ok(self.users.keys().map(|u| u.to_owned()).collect())
+    }
     pub fn upsert_user(&mut self, username: String, hashed_password: HashedPassword) -> Result<(),StoreError> {
         self.update_last_changed();
         self.users.insert(username, hashed_password);

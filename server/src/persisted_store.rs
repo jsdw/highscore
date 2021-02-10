@@ -38,6 +38,9 @@ impl Store for PersistedStore {
         self.memory_store.last_changed().await
     }
 
+    async fn users(&self) -> Result<Vec<String>,StoreError> {
+        self.memory_store.users().await
+    }
     async fn upsert_user(&self, username: String, hashed_password: HashedPassword) -> Result<(),StoreError> {
         let res = self.memory_store.upsert_user(username.clone(), hashed_password.clone()).await?;
         self.events.push(Event::UpsertUser {

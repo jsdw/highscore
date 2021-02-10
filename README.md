@@ -6,13 +6,13 @@ A small mobile-friendly app for tracking scores on things that can be easily sel
 
 Read below to find out how to install the app.
 
-To use Highscore, you must first add users to the database via the CLI tool:
+To use Highscore, you must first add users to the database via the CLI tool (swap `$USER` with whatever username you prefer):
 
 ```
-highscore add-user --database ~/highscore.db
+highscore users add $USER --database ~/highscore.db
 ```
 
-This initialises a database file (here, `~/highscore.db`) if one doesn't exist, or adds a user to an existing one.
+This initialises a database file (here, `~/highscore.db`) if one doesn't exist, or adds a user to an existing one, updating the user password if said user already exists.
 
 Next, serve the application, pointing to the same database as above:
 

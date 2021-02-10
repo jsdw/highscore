@@ -13,7 +13,6 @@ mod static_files;
 
 use anyhow::Context;
 use structopt::StructOpt;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use std::{path::PathBuf};
 use persisted_store::{ PersistedStore };
 use store_interface::{HashedPassword, Store};
@@ -21,13 +20,31 @@ use store_interface::{HashedPassword, Store};
 #[derive(Debug,Clone,StructOpt)]
 enum Opts {
     /// Add a user to a highscore database
-    AddUser(AddUserOpts),
+    Users(Users),
     /// Run the highscore server
     Serve(ServeOpts)
 }
 
 #[derive(Debug,Clone,StructOpt)]
-struct AddUserOpts {
+enum Users {
+    /// Add a new user
+    Add(NamedUserOpts),
+    /// List users
+    List(UserOpts),
+    /// Remove a user
+    Remove(NamedUserOpts)
+}
+
+#[derive(Debug,Clone,StructOpt)]
+struct NamedUserOpts {
+    /// The username
+    username: String,
+    #[structopt(flatten)]
+    opts: UserOpts
+}
+
+#[derive(Debug,Clone,StructOpt)]
+struct UserOpts {
     /// Where does the database live
     #[structopt(long,short)]
     database: PathBuf
@@ -53,32 +70,55 @@ struct ServeOpts {
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let opts = Opts::from_args();
-    println!("{:#?}", opts);
 
     match opts {
-        Opts::AddUser(opts) => add_user(opts).await,
+        Opts::Users(Users::Add(opts)) => add_user(opts).await,
+        Opts::Users(Users::List(opts)) => list_users(opts).await,
+        Opts::Users(Users::Remove(opts)) => remove_user(opts).await,
         Opts::Serve(opts) => serve(opts).await
     }
 }
 
 /// Add a new user to a database, creating the file if not exists.
-async fn add_user(opts: AddUserOpts) -> anyhow::Result<()> {
-    let username = prompt_for_input("Username: ").await?;
-    let username = username.trim_end_matches('\n');
+async fn add_user(opts: NamedUserOpts) -> anyhow::Result<()> {
+    let username = opts.username;
     let password = prompt_for_hidden_input("Password: ").await?;
     let password = password.trim_end_matches('\n');
-    let hashed_password = HashedPassword::from_plain_password(&password);
 
-    let store = PersistedStore::load(opts.database).await?;
-    store.upsert_user(username.to_owned(), hashed_password).await?;
+    let hashed_password = HashedPassword::from_plain_password(&password);
+    let store = PersistedStore::load(opts.opts.database).await?;
+    store.upsert_user(username.clone(), hashed_password).await?;
     store.flush_to_disk().await?;
 
     println!("User {} added.", username);
     Ok(())
 }
 
+/// Add a new user to a database, creating the file if not exists.
+async fn list_users(opts: UserOpts) -> anyhow::Result<()> {
+    let store = PersistedStore::load(opts.database).await?;
+    let mut users = store.users().await?;
+    users.sort();
+    for user in users {
+        println!("{}", user);
+    }
+    Ok(())
+}
+
+/// Add a new user to a database, creating the file if not exists.
+async fn remove_user(opts: NamedUserOpts) -> anyhow::Result<()> {
+    let store = PersistedStore::load(opts.opts.database).await?;
+    let username = opts.username;
+    store.delete_user(&username).await?;
+    store.flush_to_disk().await?;
+
+    println!("User {} removed.", username);
+    Ok(())
+}
+
 /// Serve the API somewhere.
 async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
+    println!("{:#?}", opts);
     let store = PersistedStore::load(opts.database).await?;
 
     let mut rocket_config = rocket::config::Config::default();
@@ -109,22 +149,6 @@ async fn serve(opts: ServeOpts) -> anyhow::Result<()> {
     rocket.launch().await?;
 
     Ok(())
-}
-
-/// Prompt for input from stdin
-async fn prompt_for_input(msg: &str) -> anyhow::Result<String> {
-    let mut stdout = tokio::io::stdout();
-    stdout.write_all(msg.as_bytes())
-        .await
-        .with_context(|| format!("Could not write to stdout"))?;
-    stdout.flush()
-        .await
-        .with_context(|| format!("Could not write to stdout (2)"))?;
-    let mut username = String::new();
-    tokio::io::BufReader::new(tokio::io::stdin()).read_line(&mut username)
-        .await
-        .with_context(|| format!("Failed to read username from stdin"))?;
-    Ok(username)
 }
 
 /// Prompt for password-like input (input is hidden)

@@ -161,4 +161,7 @@ import { onDestroy } from 'svelte';
 		justify-content: space-between;
 		align-items: center;
 	}
+	.content {
+		margin-bottom: 2em;
+	}
 </style>
