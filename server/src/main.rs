@@ -94,7 +94,7 @@ async fn add_user(opts: NamedUserOpts) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Add a new user to a database, creating the file if not exists.
+/// List users in the database
 async fn list_users(opts: UserOpts) -> anyhow::Result<()> {
     let store = PersistedStore::load(opts.database).await?;
     let mut users = store.users().await?;
@@ -105,7 +105,7 @@ async fn list_users(opts: UserOpts) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Add a new user to a database, creating the file if not exists.
+/// Remove a user from the database.
 async fn remove_user(opts: NamedUserOpts) -> anyhow::Result<()> {
     let store = PersistedStore::load(opts.opts.database).await?;
     let username = opts.username;
